@@ -580,6 +580,36 @@ tr:nth-child(even) td {
   }
 }
 
+/* ===== 代码复制按钮 ===== */
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #45475a;
+  color: #cdd6f4;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  font-family: inherit;
+}
+
+pre:hover .copy-btn {
+  opacity: 1;
+}
+
+.copy-btn:hover {
+  background: #585b70;
+}
+
+.copy-btn.copied {
+  background: #a6e3a1;
+  color: #1e1e2e;
+}
+
 @media (max-width: 480px) {
   .top-nav .nav-inner {
     justify-content: center;
