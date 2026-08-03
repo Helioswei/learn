@@ -22,7 +22,7 @@ function renderTopNav(root) {
         var href = (track.id === trackId)
           ? root + 'chapter' + pad(ch.num) + '.html'
           : root + track.id + '/chapter' + pad(ch.num) + '.html';
-        var isActive = (trackId === track.id && String(ch.num) === String(chapterNum));
+        var isActive = (trackId === track.id && parseInt(chapterNum, 10) === ch.num);
         html += '<a href="' + href + '"' + (isActive ? ' class="active"' : '') + '>第' + ch.num + '章 ' + ch.title + '</a>';
       });
     });
