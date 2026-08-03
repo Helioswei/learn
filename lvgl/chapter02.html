@@ -104,7 +104,7 @@ cmake --build build</code></pre>
 
   <p>在真机屏幕上调试 UI 很麻烦：要烧固件、看串口、备一块开发板。LVGL 官方的解法是<strong>桌面模拟器</strong>——README「Integration」把 SDL 明确列在 Simulator / desktop 一类：在 PC 上开一个窗口当屏幕，鼠标当触摸。这套驱动的源码就在 <code>lvgl-master/src/drivers/sdl/</code>，包含 <code>lv_sdl_window.c</code>（窗口）、<code>lv_sdl_mouse.c</code>（鼠标）、<code>lv_sdl_keyboard.c</code>（键盘）等文件，对应公开头文件在 <code>include/lvgl/drivers/sdl/</code>。</p>
 
-  <p>启用方式分两步。第一步在 <code>lv_conf.h</code> 里把 <code>LV_USE_SDL</code> 从 <code>0</code> 改成 <code>1</code>，并按需配置 <code>LV_SDL_INCLUDE_PATH</code>（默认 <code>"SDL2/SDL.h"</code>）等子选项；第二步保证本机装了 SDL2 开发库——CMake 在 <code>env_support/cmake/dependencies.cmake</code> 里检测到 <code>LV_USE_SDL</code> 后，会走 <code>find_package</code> → <code>pkg-config</code> → <code>FetchContent</code> 的顺序自动解析 SDL2 依赖。</p>
+  <p>启用方式分两步。第一步在 <code>lv_conf.h</code> 里把 <code>LV_USE_SDL</code> 从 <code>0</code> 改成 <code>1</code>，并按需配置 <code>LV_SDL_INCLUDE_PATH</code>（默认 <code>"SDL2/SDL.h"</code>）等子选项；第二步保证本机装了 SDL2 开发库——CMake 在 <code>env_support/cmake/dependencies.cmake</code> 里检测到 <code>CONFIG_LV_USE_SDL</code>（即 <code>lv_conf.h</code> 中 <code>LV_USE_SDL</code> 预处理后的 CMake 内部变量）后，会走 <code>find_package</code> → <code>pkg-config</code> → <code>FetchContent</code> 的顺序自动解析 SDL2 依赖。</p>
 
   <pre><code><span class="cmt">/* lv_conf.h：打开桌面模拟器 */</span>
 <span class="kw">#define</span> <span class="kw">LV_USE_SDL</span> <span class="num">1</span>
