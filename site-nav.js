@@ -48,7 +48,7 @@ window.SITE_NAV = {
     {
       id: "lvgl",
       name: "LVGL",
-      accent: "#2f6b78",
+      accent: "#35536b",
       desc: "LVGL 嵌入式图形库教程",
       tagline: "从 MCU 到桌面模拟器，系统掌握 LVGL 嵌入式图形开发",
       parts: [

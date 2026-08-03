@@ -63,7 +63,7 @@ function renderTOC(root) {
     part.chapters.forEach(function (ch) {
       var emoji = MENTORS[ch.mentor] || '📘';
       html += '<li><a href="chapter' + pad(ch.num) + '.html"><span class="chapter-num">' + pad(ch.num) + '</span>' +
-        ch.title + ' <small>— ' + emoji + ' ' + ch.mentor + '·' + ch.method + '</small></a></li>';
+        ch.title + ' <small>' + emoji + ' ' + ch.mentor + '</small></a></li>';
     });
     html += '</ul></div>';
   });
