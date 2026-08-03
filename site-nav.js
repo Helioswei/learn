@@ -11,7 +11,7 @@ window.SITE_NAV = {
     {
       id: "kotlin",
       name: "Kotlin",
-      accent: "#7f5af0",
+      accent: "#b3402f",
       desc: "Kotlin Android 开发教程",
       tagline: "从语言特性到 Android 实战，为有编程基础的开发者打造的系统化学习路径",
       parts: [
@@ -48,7 +48,7 @@ window.SITE_NAV = {
     {
       id: "lvgl",
       name: "LVGL",
-      accent: "#0d9488",
+      accent: "#2f6b78",
       desc: "LVGL 嵌入式图形库教程",
       tagline: "从 MCU 到桌面模拟器，系统掌握 LVGL 嵌入式图形开发",
       parts: [
