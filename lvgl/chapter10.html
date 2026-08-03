@@ -239,7 +239,7 @@ python3 scripts/built_in_font/built_in_font_gen.py \
       <p>你在一台板子上显示一张 JPEG 照片：<code>lv_image_set_src(img, "S:/photo.jpg")</code>，但屏幕上空白。请按"排除不可能"列出排查清单，至少覆盖：解码器宏、文件系统挂载、源路径、描述符/符号区别，并说明每一项的验证方法。若最终查到是 <code>LV_USE_LIBJPEG_TURBO 0</code>，修复要改哪里？</p>
       <details>
         <summary>提示</summary>
-        <div class="answer-content"><p>JPEG 在 v9 有 <code>LV_USE_TJPGD</code> 与 <code>LV_USE_LIBJPEG_TURBO</code> 两个解码入口；文件路径要求先初始化 FS 驱动（<code>lv_fs_register</code> 一个驱动器字母，如 <code>"S:"</code>）。可以对照 10.1 的配置块逐项核对。</p></div>
+        <div class="answer-content"><p>JPEG 在 v9 有 <code>LV_USE_TJPGD</code> 与 <code>LV_USE_LIBJPEG_TURBO</code> 两个解码入口；文件路径要求先初始化 FS 驱动（<code>lv_fs_drv_init</code> + <code>lv_fs_drv_register</code> 注册一个驱动器字母，如 <code>"S:"</code>）。可以对照 10.1 的配置块逐项核对。</p></div>
       </details>
       <details>
         <summary>参考答案</summary>

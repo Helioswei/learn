@@ -119,12 +119,12 @@
 <span class="fn">lv_dropdown_bind_value</span>(dd, &amp;sub);       <span class="cmt">/* 下拉框选中项 */</span>
 <span class="fn">lv_image_bind_src</span>(img, &amp;img_subject);   <span class="cmt">/* 多张图标轮换 */</span></code></pre>
 
-  <p>针对"属性是否成立"的绑定，通用对象还提供条件族：<code>lv_obj_bind_checked()</code> 把 subject 的 int 值映射到控件的 <code>LV_STATE_CHECKED</code>；<code>lv_obj_bind_flag_if_eq()</code> 系列（还有 <code>not_eq/gt/ge/lt/le</code>）在值满足条件时给对象挂标志（如 <code>LV_OBJ_FLAG_HIDDEN</code>）；<code>lv_obj_bind_state_if_gt()</code> 系列则在越界时给对象换状态（如 <code>LV_STATE_WARN</code> 警示色）。这类绑定让"数据驱动界面外观"几乎不用写任何回调。</p>
+  <p>针对"属性是否成立"的绑定，通用对象还提供条件族：<code>lv_obj_bind_checked()</code> 把 subject 的 int 值映射到控件的 <code>LV_STATE_CHECKED</code>；<code>lv_obj_bind_flag_if_eq()</code> 系列（还有 <code>not_eq/gt/ge/lt/le</code>）在值满足条件时给对象挂标志（如 <code>LV_OBJ_FLAG_HIDDEN</code>）；<code>lv_obj_bind_state_if_gt()</code> 系列则在越界时给对象换状态——官方示例 <code>lv_example_slider_bind_state.c</code> 就用 <code>LV_STATE_DISABLED</code> 让值超过 80 时按钮被禁用。这类绑定让"数据驱动界面外观"几乎不用写任何回调。</p>
 
-<pre><code><span class="cmt">/* 条件族绑定：值等于 0 时隐藏按钮，超过 80 时进度条变警示色 */</span>
+<pre><code><span class="cmt">/* 条件族绑定：值等于 0 时隐藏按钮，超过 80 时进度条禁用 */</span>
 <span class="fn">lv_obj_bind_checked</span>(chk, &amp;sub);
 <span class="fn">lv_obj_bind_flag_if_eq</span>(btn, &amp;sub, <span class="kw">LV_OBJ_FLAG_HIDDEN</span>, <span class="num">0</span>);
-<span class="fn">lv_obj_bind_state_if_gt</span>(bar, &amp;sub, <span class="kw">LV_STATE_WARN</span>, <span class="num">80</span>);</code></pre>
+<span class="fn">lv_obj_bind_state_if_gt</span>(bar, &amp;sub, <span class="kw">LV_STATE_DISABLED</span>, <span class="num">80</span>);</code></pre>
 
   <table>
     <tr><th>绑定函数</th><th>作用</th></tr>
@@ -147,7 +147,7 @@
 {
     <span class="cmt">/* subject 是触发来源，从中读当前值 */</span>
     <span class="kw">if</span>(<span class="fn">lv_subject_get_int</span>(subject) &gt; <span class="num">100</span>) {
-        <span class="fn">lv_obj_clear_flag</span>(alarm, <span class="kw">LV_OBJ_FLAG_HIDDEN</span>);  <span class="cmt">/* 亮起报警 */</span>
+        <span class="fn">lv_obj_remove_flag</span>(alarm, <span class="kw">LV_OBJ_FLAG_HIDDEN</span>);  <span class="cmt">/* 亮起报警 */</span>
     }
 }
 <span class="cmt">/* 订阅：回调注册到 subject 上 */</span>
@@ -218,14 +218,14 @@
 
     <div class="exercise-item">
       <h3>练习 2：手动 observer 回调实现超限报警 <span class="difficulty difficulty-medium">进阶</span></h3>
-      <p>用 <code>lv_subject_add_observer()</code> 注册一个手动回调：当 subject 值超过 80 时，把一个 label 的文本设为 <code>"超限!"</code> 并加上 <code>LV_STATE_WARN</code>，否则恢复 <code>"正常"</code>。写全代码，并解释：相比在事件回调里逐处判断，手动 observer 为什么更不容易漏改？</p>
+      <p>用 <code>lv_subject_add_observer()</code> 注册一个手动回调：当 subject 值超过 80 时，把一个 label 的文本设为 <code>"超限!"</code> 并切到自定义状态 <code>LV_STATE_USER_1</code>（配合一条自定义样式显示警示色），否则恢复 <code>"正常"</code> 并移除该状态。写全代码，并解释：相比在事件回调里逐处判断，手动 observer 为什么更不容易漏改？</p>
       <details>
         <summary>提示</summary>
         <div class="answer-content"><p>回调签名是 <code>void cb(lv_observer_t * observer, lv_subject_t * subject)</code>；用 <code>lv_subject_get_int(subject)</code> 读值；改状态用 <code>lv_obj_add_state/lv_obj_remove_state</code> 或 <code>lv_obj_set_style_text_color</code>。</p></div>
       </details>
       <details>
         <summary>参考答案</summary>
-        <div class="answer-content"><p>核心代码：<code>static void warn_cb(lv_observer_t * o, lv_subject_t * s){ if(lv_subject_get_int(s) &gt; 80){ lv_label_set_text(label, "超限!"); lv_obj_add_state(label, LV_STATE_WARN); } else { lv_label_set_text(label, "正常"); lv_obj_remove_state(label, LV_STATE_WARN); } }</code>，再 <code>lv_subject_add_observer(&amp;temp_subject, warn_cb, NULL)</code>。安全性：无论数据从哪条路径改（传感器、滑块、按钮加/减），所有入口最终都汇聚到 <code>lv_subject_set_*</code>，回调只会被触发一次、逻辑只写一处；而手动在 N 个入口各写一遍判断，任何一处漏写就是 bug。这就是"数据是唯一事实来源"的价值。</p></div>
+        <div class="answer-content"><p>核心代码：<code>static void warn_cb(lv_observer_t * o, lv_subject_t * s){ if(lv_subject_get_int(s) &gt; 80){ lv_label_set_text(label, "超限!"); lv_obj_add_state(label, LV_STATE_USER_1); } else { lv_label_set_text(label, "正常"); lv_obj_remove_state(label, LV_STATE_USER_1); } }</code>，再 <code>lv_subject_add_observer(&amp;temp_subject, warn_cb, NULL)</code>。注意 LVGL 9 没有内置"警示"状态，自定义状态用 <code>LV_STATE_USER_1</code>（还有 USER_2..4），再配一条 <code>LV_STATE_USER_1</code> 下的样式（如红色文字）让它显示成报警色。安全性：无论数据从哪条路径改（传感器、滑块、按钮加/减），所有入口最终都汇聚到 <code>lv_subject_set_*</code>，回调只会被触发一次、逻辑只写一处；而手动在 N 个入口各写一遍判断，任何一处漏写就是 bug。这就是"数据是唯一事实来源"的价值。</p></div>
       </details>
     </div>
 
