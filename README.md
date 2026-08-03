@@ -23,7 +23,8 @@ kotlin-tutorial/
 ├── script.js         导航 / TOC / 复制按钮渲染
 ├── preview.html      设计系统预览页（开发参考）
 ├── kotlin/           index.html + chapter01-16.html（Kotlin 技术线）
-└── lvgl/             index.html + chapter01-16.html（LVGL 技术线，9.6.0-dev 内容）
+├── lvgl/             index.html + chapter01-16.html（LVGL 技术线，9.6.0-dev 内容）
+└── tools/            check-links.js 链接校验脚本
 ```
 
 ## 章节导航
