@@ -33,37 +33,29 @@ for (const file of files) {
   }
 }
 
-/* 2) SITE_NAV 导航链接（按页面 data-* 推导，与 script.js 逻辑一致） */
+/* 2) SITE_NAV 导航 + TOC + 底部导航链接（按页面 data-* 推导，与 script.js 逻辑一致） */
 function pad(n) { return (n < 10 ? '0' : '') + n; }
 for (const file of files) {
   const html = fs.readFileSync(file, 'utf8');
   const dir = path.dirname(file);
   const track = /data-track="([^"]+)"/.exec(html);
-  const chapter = /data-chapter="([^"]+)"/.exec(html);
   const dataRoot = /data-root="([^"]+)"/.exec(html);
   if (!dataRoot) continue;
   const rootPath = dataRoot[1];
   const trackId = track ? track[1] : null;
-  const chapterNum = chapter ? chapter[1] : null;
+  const links = [rootPath + 'index.html']; /* 顶栏 首页 */
+  SITE_NAV.tracks.forEach(tk => links.push(rootPath + tk.id + '/index.html')); /* 顶栏各技术线 */
   if (trackId) {
     const t = SITE_NAV.tracks.find(x => x.id === trackId);
-    if (!t) { fail(file, '[unknown track ' + trackId + ']'); continue; }
-    const links = [rootPath + 'index.html', rootPath + trackId + '/index.html'];
-    SITE_NAV.tracks.forEach(tk => {
-      tk.parts.forEach(p => p.chapters.forEach(c => {
-        const href = rootPath + tk.id + '/chapter' + pad(c.num) + '.html';
-        links.push(href);
-      }));
-    });
-    const flat = [];
-    t.parts.forEach(p => p.chapters.forEach(c => flat.push(c)));
-    const idx = flat.findIndex(c => c.num === parseInt(chapterNum, 10));
-    if (idx > 0) links.push(rootPath + trackId + '/chapter' + pad(flat[idx - 1].num) + '.html');
-    if (idx >= 0 && idx < flat.length - 1) links.push(rootPath + trackId + '/chapter' + pad(flat[idx + 1].num) + '.html');
-    for (const l of links) {
-      const target = path.resolve(dir, decodeURIComponent(l));
-      if (!fs.existsSync(target)) fail(file, l);
+    if (!t) { fail(file, '[unknown track ' + trackId + ']'); }
+    else {
+      /* 目录页 TOC + 章节页底部上一/下一章（均指向本线 chapterNN.html） */
+      t.parts.forEach(p => p.chapters.forEach(c => links.push(rootPath + trackId + '/chapter' + pad(c.num) + '.html')));
     }
+  }
+  for (const l of links) {
+    const target = path.resolve(dir, decodeURIComponent(l));
+    if (!fs.existsSync(target)) fail(file, l);
   }
 }
 

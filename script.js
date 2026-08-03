@@ -4,27 +4,16 @@ function pad(n) {
   return (n < 10 ? '0' : '') + n;
 }
 
-/* 顶栏：品牌 + 首页 + 各技术线下拉 */
+/* 顶栏：品牌 + 首页 + 各技术线（直接链接到目录页） */
 function renderTopNav(root) {
   var inner = document.getElementById('nav-inner');
   if (!inner) return;
   var trackId = document.body.getAttribute('data-track');
-  var chapterNum = document.body.getAttribute('data-chapter');
   var html = '<span class="brand">' + SITE_NAV.siteName + '</span>';
   html += '<a href="' + root + 'index.html"' + (trackId ? '' : ' class="active"') + '>' + SITE_NAV.homeLabel + '</a>';
   SITE_NAV.tracks.forEach(function (track) {
-    html += '<div class="nav-dropdown">';
-    html += '<span class="nav-dropdown-label' + (trackId === track.id ? ' active' : '') + '" tabindex="0">' + track.name + ' ▾</span>';
-    html += '<div class="nav-dropdown-menu">';
-    track.parts.forEach(function (part) {
-      html += '<div class="nav-part-label">' + part.title + '</div>';
-      part.chapters.forEach(function (ch) {
-        var href = root + track.id + '/chapter' + pad(ch.num) + '.html';
-        var isActive = (trackId === track.id && parseInt(chapterNum, 10) === ch.num);
-        html += '<a href="' + href + '"' + (isActive ? ' class="active"' : '') + '>第' + ch.num + '章 ' + ch.title + '</a>';
-      });
-    });
-    html += '</div></div>';
+    var isActive = (trackId === track.id);
+    html += '<a href="' + root + track.id + '/index.html"' + (isActive ? ' class="active"' : '') + '>' + track.name + '</a>';
   });
   inner.innerHTML = html;
 }
