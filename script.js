@@ -19,9 +19,7 @@ function renderTopNav(root) {
     track.parts.forEach(function (part) {
       html += '<div class="nav-part-label">' + part.title + '</div>';
       part.chapters.forEach(function (ch) {
-        var href = (track.id === trackId)
-          ? root + 'chapter' + pad(ch.num) + '.html'
-          : root + track.id + '/chapter' + pad(ch.num) + '.html';
+        var href = root + track.id + '/chapter' + pad(ch.num) + '.html';
         var isActive = (trackId === track.id && parseInt(chapterNum, 10) === ch.num);
         html += '<a href="' + href + '"' + (isActive ? ' class="active"' : '') + '>第' + ch.num + '章 ' + ch.title + '</a>';
       });
@@ -45,9 +43,9 @@ function renderBottomNav(root) {
   var prev = (idx > 0) ? flat[idx - 1] : null;
   var next = (idx >= 0 && idx < flat.length - 1) ? flat[idx + 1] : null;
   var html = '';
-  html += prev ? '<a class="prev" href="' + root + 'chapter' + pad(prev.num) + '.html">« 上一章</a>' : '<span class="placeholder"></span>';
+  html += prev ? '<a class="prev" href="' + root + trackId + '/chapter' + pad(prev.num) + '.html">« 上一章</a>' : '<span class="placeholder"></span>';
   html += '<a class="toc" href="' + root + trackId + '/index.html">目录</a>';
-  html += next ? '<a class="next" href="' + root + 'chapter' + pad(next.num) + '.html">下一章 »</a>' : '<span class="placeholder"></span>';
+  html += next ? '<a class="next" href="' + root + trackId + '/chapter' + pad(next.num) + '.html">下一章 »</a>' : '<span class="placeholder"></span>';
   el.innerHTML = html;
 }
 
