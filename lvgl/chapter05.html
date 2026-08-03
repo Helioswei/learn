@@ -101,7 +101,7 @@
 
   <p>按钮和标签是出场率最高的组合，也最能说明"控件怎么拼"。按钮 <code>lv_button_create()</code> 默认按内容自适应尺寸，所以你通常给它设一个显式尺寸，再在里面创建一个标签并 <code>lv_obj_align</code> 到中心。这个"按钮里嵌标签"的结构，参考 <code>lvgl-master/examples/widgets/button/lv_example_button_basic.c</code> 即可：第二个按钮显式 <code>lv_obj_set_size(button_2, 160, 48)</code>，标签再居中，文字就稳稳落在按钮正中央。</p>
 
-  <p>标签 <code>lv_label_create()</code> 的核心是 <code>lv_label_set_text()</code> 与它的"长文本模式"。文本太长放不下怎么办？<code>lv_label_set_long_mode()</code> 决定行为：<code>LV_LABEL_LONG_WRAP</code> 自动换行并撑高、<code>LV_LABEL_LONG_DOTS</code> 末尾省略号、<code>LV_LABEL_LONG_SCROLL_CIRCULAR</code> 循环滚动。做状态提示时，还常用 <code>lv_label_set_text_fmt()</code> 格式化拼接，比如 <code>"当前值: %d"</code>——第 8 章事件系统的滑块示例就大量用它实时刷新。</p>
+  <p>标签 <code>lv_label_create()</code> 的核心是 <code>lv_label_set_text()</code> 与它的"长文本模式"。文本太长放不下怎么办？<code>lv_label_set_long_mode()</code> 决定行为：<code>LV_LABEL_LONG_MODE_WRAP</code> 自动换行并撑高、<code>LV_LABEL_LONG_MODE_DOTS</code> 末尾省略号、<code>LV_LABEL_LONG_MODE_SCROLL_CIRCULAR</code> 循环滚动。做状态提示时，还常用 <code>lv_label_set_text_fmt()</code> 格式化拼接，比如 <code>"当前值: %d"</code>——第 8 章事件系统的滑块示例就大量用它实时刷新。</p>
 
 <pre><code><span class="cmt">/* 按钮 + 居中标签：最小可交互单元（参考 lv_example_button_basic.c） */</span>
 <span class="type">lv_obj_t</span> * btn = <span class="fn">lv_button_create</span>(<span class="fn">lv_screen_active</span>());
@@ -114,24 +114,24 @@
 
 <pre><code><span class="cmt">/* 标签长文本模式：三种典型处理 */</span>
 <span class="fn">lv_obj_set_width</span>(lbl_wrap, <span class="num">120</span>);
-<span class="fn">lv_label_set_long_mode</span>(lbl_wrap, <span class="kw">LV_LABEL_LONG_WRAP</span>);        <span class="cmt">/* 换行撑高 */</span>
+<span class="fn">lv_label_set_long_mode</span>(lbl_wrap, <span class="kw">LV_LABEL_LONG_MODE_WRAP</span>);        <span class="cmt">/* 换行撑高 */</span>
 
 <span class="fn">lv_obj_set_width</span>(lbl_dots, <span class="num">120</span>);
-<span class="fn">lv_label_set_long_mode</span>(lbl_dots, <span class="kw">LV_LABEL_LONG_DOTS</span>);         <span class="cmt">/* 太长打省略号 */</span>
+<span class="fn">lv_label_set_long_mode</span>(lbl_dots, <span class="kw">LV_LABEL_LONG_MODE_DOTS</span>);         <span class="cmt">/* 太长打省略号 */</span>
 
 <span class="fn">lv_obj_set_width</span>(lbl_scroll, <span class="num">120</span>);
-<span class="fn">lv_label_set_long_mode</span>(lbl_scroll, <span class="kw">LV_LABEL_LONG_SCROLL_CIRCULAR</span>); <span class="cmt">/* 循环滚动 */</span>
+<span class="fn">lv_label_set_long_mode</span>(lbl_scroll, <span class="kw">LV_LABEL_LONG_MODE_SCROLL_CIRCULAR</span>); <span class="cmt">/* 循环滚动 */</span>
 
 <span class="cmt">/* 格式化文本：实时刷新状态提示的利器 */</span>
 <span class="fn">lv_label_set_text_fmt</span>(status, <span class="str">"Value: %d"</span>, value);</code></pre>
 
   <table>
     <tr><th>长文本模式</th><th>行为</th></tr>
-    <tr><td><code>LV_LABEL_LONG_WRAP</code></td><td>保持宽度，超长换行并撑高对象</td></tr>
-    <tr><td><code>LV_LABEL_LONG_DOTS</code></td><td>保持尺寸，末尾显示省略号</td></tr>
-    <tr><td><code>LV_LABEL_LONG_SCROLL</code></td><td>保持尺寸，文本来回滚动</td></tr>
-    <tr><td><code>LV_LABEL_LONG_SCROLL_CIRCULAR</code></td><td>保持尺寸，文本循环滚动</td></tr>
-    <tr><td><code>LV_LABEL_LONG_CLIP</code></td><td>保持尺寸，直接裁切</td></tr>
+    <tr><td><code>LV_LABEL_LONG_MODE_WRAP</code></td><td>保持宽度，超长换行并撑高对象</td></tr>
+    <tr><td><code>LV_LABEL_LONG_MODE_DOTS</code></td><td>保持尺寸，末尾显示省略号</td></tr>
+    <tr><td><code>LV_LABEL_LONG_MODE_SCROLL</code></td><td>保持尺寸，文本来回滚动</td></tr>
+    <tr><td><code>LV_LABEL_LONG_MODE_SCROLL_CIRCULAR</code></td><td>保持尺寸，文本循环滚动</td></tr>
+    <tr><td><code>LV_LABEL_LONG_MODE_CLIP</code></td><td>保持尺寸，直接裁切</td></tr>
   </table>
 
   <div class="tip">
