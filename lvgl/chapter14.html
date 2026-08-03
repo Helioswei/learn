@@ -32,7 +32,7 @@
 
   <p>LVGL 的渲染层集中在 <code>src/draw/</code>。打开这个目录你会发现，它不是一个"唯一的绘制实现"，而是一组可以互相切换的<strong>后端</strong>（backend）。默认且最通用的，是纯 CPU 的软件渲染器 <code>sw/</code>；旁边还并排躺着 <code>opengles/</code>（OpenGL ES）、<code>vg_lite/</code>（NXP VG-Lite GPU）、<code>nema_gfx/</code>（ThinkSilicon NemaGFX）、<code>nxp/</code>（NXP PXP）、<code>dma2d/</code>（STM32 DMA2D）等硬件加速后端，以及 <code>sdl/</code>、<code>espressif/</code>、<code>renesas/</code> 等平台相关后端。</p>
 
-  <p>后端的差异对你的 UI 代码是<strong>透明的</strong>：widgets 层调用统一的绘制接口，后端只负责"画得快一点还是慢一点"。切换后端几乎只动配置——<code>LV_USE_DRAW_SW</code> 控制软件渲染（默认 <span class="num">1</span>，开启），<code>LV_USE_DRAW_VG_LITE</code> 控制 VG-Lite GPU（默认 <span class="num">0</span>，需要硬件）。软件渲染内部还有若干可调项：<code>LV_DRAW_SW_DRAW_UNIT_CNT</code> 决定并行绘制单元数量，<code>LV_DRAW_SW_COMPLEX_GRADIENTS</code> 决定是否启用复杂渐变，<code>LV_DRAW_SW_SHADOW_CACHE_SIZE</code> 缓存阴影计算。</p>
+  <p>后端的差异对你的 UI 代码是<strong>透明的</strong>：widgets 层调用统一的绘制接口，后端只负责"画得快一点还是慢一点"。切换后端几乎只动配置——<code>LV_USE_DRAW_SW</code> 控制软件渲染（默认 <span class="num">1</span>，开启），<code>LV_USE_DRAW_VG_LITE</code> 控制 VG-Lite GPU（默认 <span class="num">0</span>，需要硬件）。软件渲染内部还有若干可调项：<code>LV_DRAW_SW_DRAW_UNIT_CNT</code> 决定并行绘制单元数量，<code>LV_USE_DRAW_SW_COMPLEX_GRADIENTS</code> 决定是否启用复杂渐变，<code>LV_DRAW_SW_SHADOW_CACHE_SIZE</code> 缓存阴影计算。</p>
 
 <pre><code><span class="cmt">/* lv_conf.h —— 选择渲染后端 */</span>
 <span class="kw">#define</span> <span class="kw">LV_USE_DRAW_SW</span> <span class="num">1</span>               <span class="cmt">/* 软件渲染，默认开启 */</span>
