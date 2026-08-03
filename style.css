@@ -236,6 +236,16 @@ body.track-lvgl .mentor-card { background: linear-gradient(135deg, #0f3d38 0%, #
 }
 .warning .tip-title { color: #b45309; }
 
+/* C++ 对比提示（Kotlin 章节内容依赖此组件） */
+.cpp-note {
+  background: var(--success-soft);
+  border-left: 4px solid var(--success);
+  padding: 16px 20px;
+  margin: 24px 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+.cpp-note .tip-title { color: var(--success); }
+
 /* ===== 9. 对比表格 ===== */
 table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 0.95rem; border: 1px solid var(--hairline); border-radius: var(--radius-md); overflow: hidden; }
 th { background: var(--ink); color: #fff; padding: 10px 16px; text-align: left; font-weight: 600; }
