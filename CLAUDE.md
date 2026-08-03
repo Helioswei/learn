@@ -29,7 +29,7 @@
   - `data-track` — 技术线 id（`kotlin` / `lvgl`）；门户与 preview 页可省略
   - `data-chapter` — 章节页编号（章节页必填）；Kotlin 用两位补零（如 `"01"`），LVGL 用非补零（如 `"1"`），`script.js` 用 `parseInt` 解析，两者均可
   - `data-root` — 相对根：子目录章节/目录页用 `"../"`，根目录页面（门户、preview）用 `"./"`
-- **链接一律相对路径**。GitHub Pages 部署在 `/kotlin-tutorial/` 子路径，以 `/` 开头的根绝对路径会失效。
+- **链接一律相对路径**。GitHub Pages 部署在 `/learn/` 子路径，以 `/` 开头的根绝对路径会失效。
 - **脚本顺序**：`site-nav.js` 必须在 `script.js` 之前加载。
 
 ## 提交规范
@@ -49,7 +49,7 @@
 全站链接校验（Node；`tools/check-links.js` 由 Task 8 建立——若 `tools/` 尚不存在，则先执行 Task 8，本说明记录最终用法）：
 
 ```bash
-cd /Users/helios/work/project/lvgl-sample/kotlin-tutorial && node tools/check-links.js
+cd /Users/helios/work/project/lvgl-sample/learn && node tools/check-links.js
 ```
 
 预期输出 `OK: all links resolve`，退出码 0=通过 / 1=失败；出现 `BROKEN` 时修复对应页面后重跑。
@@ -60,4 +60,4 @@ cd /Users/helios/work/project/lvgl-sample/kotlin-tutorial && node tools/check-li
 python3 -m http.server 8000
 ```
 
-浏览器访问 `http://localhost:8000`；或直接用浏览器打开 `index.html`。
+浏览器访问 `http://localhost:8000`（若 8000 被其他服务占用，改用空闲端口如 `8090`）；或直接用浏览器打开 `index.html`。

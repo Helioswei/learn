@@ -10,13 +10,13 @@
 部署到 GitHub Pages 后，访问：
 
 ```
-https://<your-username>.github.io/kotlin-tutorial/
+https://Helioswei.github.io/learn/
 ```
 
 ## 目录结构
 
 ```
-kotlin-tutorial/
+learn/
 ├── index.html        门户首页（Helios 技术教程）
 ├── style.css         统一浅色设计系统（CSS design tokens）
 ├── site-nav.js       导航数据单一来源（SITE_NAV / MENTORS）
