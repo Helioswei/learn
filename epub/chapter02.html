@@ -30,7 +30,7 @@
   <!-- ========== 2.1 PlatformIO 与 ESP-IDF 的关系 ========== -->
   <h2>2.1 PlatformIO 与 ESP-IDF 的关系</h2>
 
-  <p>一句话概括：<strong>ESP-IDF 是乐鑫官方 SDK</strong>（驱动、WiFi、FreeRTOS、工具链，以 <code>esp-idf</code> 的方式组织整个工程），而 <strong>PlatformIO 是跨平台的构建 / 烧录 / 调试生态</strong>（CLI + VSCode 插件）。这个项目的 README 说得直白：构建需要 "VSCode with the PlatformIO extension installed"。PlatformIO 负责把 ESP-IDF 背后的工具链下载、编译、链接、烧录这些苦力活全部接管，让你只关心代码本身。</p>
+  <p>一句话概括：<strong>ESP-IDF 是乐鑫官方的 ESP32 开发框架</strong>（提供驱动、WiFi、FreeRTOS 等 API 与一套构建系统，以 <code>esp-idf</code> 的方式组织整个工程），而 <strong>PlatformIO 是跨平台的嵌入式开发工具</strong>（CLI + VSCode 插件），编译、依赖、烧录这些活都归它管。这个项目的 README 说得直白：构建需要 "VSCode with the PlatformIO extension installed"。PlatformIO 负责把 ESP-IDF 背后的工具链下载、编译（把 C/C++ 源码变成能烧进芯片的二进制）、链接、烧录（把编译产物写到芯片 Flash）这些苦力活全部接管，让你只关心代码本身。</p>
 
   <p>这份关系的"契约"就写在 <code>platformio.ini</code> 里。看 <code>[common]</code> 段：<code>platform = espressif32 @ 3.3.2</code> 锁定了乐鑫工具链平台及其版本（PlatformIO 会据此下载对应的编译器和 SDK，<code>@ 3.3.2</code> 是精确到小版本的版本约束）；<code>framework = espidf</code> 选择<strong>原生 ESP-IDF API</strong>（而不是 Arduino 封装——这是两套完全不同的编程接口）；<code>board = esp32dev</code> 提供默认的 Flash 大小、时钟等板级参数；下面还有 <code>monitor_speed = 115200</code>、<code>monitor_filters = esp32_exception_decoder</code>（串口监视器把 panic 地址反编译成可读的调用栈）以及 <code>lib_deps</code>（声明第三方库依赖，TinyXML2 就在这里拉取）。</p>
 
@@ -64,9 +64,9 @@
   <!-- ========== 2.2 多种环境：读懂四套 env ========== -->
   <h2>2.2 多种环境：读懂四套 env</h2>
 
-  <p>同一份源码编译出三块不同板子的固件，靠的是 <code>platformio.ini</code> 里 4 个 <code>[env:*]</code> 段 + 预处理宏。首行 <code>default_envs = lilygo_t5_47</code> 说明：不指定环境时，默认构建 LilyGo T5 4.7" 的固件。每个环境都 <code>extends = esp32_common</code> 继承公共配置，再叠加属于自己的 <code>build_flags</code>。</p>
+  <p>同一份源码编译出三块不同板子的固件，靠的是 <code>platformio.ini</code> 里 4 个 <code>[env:*]</code> 段 + 预处理宏。env（环境）就是 platformio.ini 里一套可独立编译的配置，对应一块板或一个构建目标。首行 <code>default_envs = lilygo_t5_47</code> 说明：不指定环境时，默认构建 LilyGo T5 4.7" 的固件。每个环境都 <code>extends = esp32_common</code> 继承公共配置，再叠加属于自己的 <code>build_flags</code>。</p>
 
-  <p>以 <code>[env:lilygo_t5_47]</code> 为例逐条拆：<code>-DBOARD_TYPE_LILIGO_T5_47</code> 让 <code>Board::factory()</code> 在编译期实例化 <code>Lilygo_t5_47</code>；<code>-DCONFIG_EPD_DISPLAY_TYPE_ED047TC2</code> 与 <code>-DCONFIG_EPD_BOARD_REVISION_LILYGO_T5_47</code> 来自 EPDiy 库，声明屏幕型号与板卡修订；SD 卡用 4 个 <code>GPIO_NUM_*</code> 宏定义 SPI 引脚（MISO14 / MOSI13 / CLK15 / CS12）；<code>-DBATTERY_ADC_CHANNEL=ADC1_CHANNEL_0</code> 告诉电池模块用哪个 ADC 通道读电压分压（GPIO_NUM_36）；<code>-D USE_SPIFFS</code> 启用 SPIFFS 文件系统；<code>-D USE_L58_TOUCH</code> 加上 <code>CONFIG_TOUCH_SDA/SDL/INT</code> 打开触摸屏。</p>
+  <p>这些 <code>-D</code> 开头的行就是 build flags（编译宏）：以 <code>-D</code> 传给编译器的定义，在编译期生效，用来开关功能或告诉代码自己在为哪块板编译。以 <code>[env:lilygo_t5_47]</code> 为例逐条拆：<code>-DBOARD_TYPE_LILIGO_T5_47</code> 让 <code>Board::factory()</code> 在编译期实例化 <code>Lilygo_t5_47</code>；<code>-DCONFIG_EPD_DISPLAY_TYPE_ED047TC2</code> 与 <code>-DCONFIG_EPD_BOARD_REVISION_LILYGO_T5_47</code> 来自 EPDiy 库，声明屏幕型号与板卡修订；SD 卡用 4 个 <code>GPIO_NUM_*</code> 宏定义 SPI 引脚（MISO14 / MOSI13 / CLK15 / CS12）；<code>-DBATTERY_ADC_CHANNEL=ADC1_CHANNEL_0</code> 告诉电池模块用哪个 ADC 通道读电压分压（GPIO_NUM_36）；<code>-D USE_SPIFFS</code> 启用 SPIFFS 文件系统（ESP32 上的一个小型文件系统，烧在 Flash 里，掉电不丢）；<code>-D USE_L58_TOUCH</code> 加上 <code>CONFIG_TOUCH_SDA/SDL/INT</code> 打开触摸屏。</p>
 
   <p>再看另两个板子环境，这套宏的"作用域"就清楚了。<code>[env:epdiy]</code> 面向 EPDiy V6 开发板：屏幕换成 <code>CONFIG_EPD_DISPLAY_TYPE_ED060XC3</code>（6"）、<code>CONFIG_EPD_BOARD_REVISION_V6</code>，还多了一个 <code>CONFIG_EPD_DRIVER_V6_VCOM=1580</code>（VCOM 电压），SD 引脚完全不同（MISO36 / MOSI0 / CLK13 / CS14），并且 <code>lib_ignore = touch / FT6X36</code> 把触摸库从编译中剔除。<code>[env:m5_paper]</code> 则复用了 ED047TC2 的屏幕定义，只改 SD 引脚（MISO13 / MOSI12 / CLK14 / CS4）与 ADC 通道（<code>ADC1_CHANNEL_7</code>）。规律一目了然：<strong>屏幕型号决定渲染代码，引脚宏决定外设，lib_ignore 决定链接哪些库</strong>——三层全部在编译期用宏切分。</p>
 
@@ -124,7 +124,7 @@ debug_test = *</code></pre>
 
   <div class="warning">
     <div class="tip-title">注意</div>
-    <p>README 里的示例写的是 <code>-DCONFIG_EPD_DISPLAY_TYPE_ED047TC1</code>，但 <code>platformio.ini</code> 里实际是 <strong>ED047TC2</strong>。这也是文档与代码漂移的又一例——记住：永远以 <code>platformio.ini</code> 与 <code>sdkconfig.*</code> 为准。</p>
+    <p>README 里的示例写的是 <code>-DCONFIG_EPD_DISPLAY_TYPE_ED047TC1</code>，但 <code>platformio.ini</code> 里实际是 <strong>ED047TC2</strong>。这也是文档与代码漂移的又一例——记住：永远以 <code>platformio.ini</code> 与 <code>sdkconfig.*</code>（ESP-IDF 的配置项文件，Kconfig 风格，记录着各类选项）为准。</p>
   </div>
 
   <div class="tip">
@@ -167,7 +167,7 @@ pio test -e native</code></pre>
   <!-- ========== 2.4 依赖与子模块 ========== -->
   <h2>2.4 依赖与子模块</h2>
 
-  <p>除了 <code>lib_deps</code> 里由 PlatformIO 自动拉取的 TinyXML2，这个项目还依赖<strong>三个 git 子模块</strong>，记录在根目录的 <code>.gitmodules</code> 里：<code>lib/epdiy</code>（<code>martinberlin/epdiy-rotation</code>，屏幕驱动）、<code>lib/touch</code>（<code>martinberlin/FT6X36-IDF</code>，触摸驱动）、<code>lib/png/PNGdec</code>（<code>atomic14/PNGdec</code>，PNG 解码）。子模块不会随普通 <code>git clone</code> 自动检出内容，所以 README 特意要求 <code>git clone --recursive</code>。</p>
+  <p>除了 <code>lib_deps</code> 里由 PlatformIO 自动拉取的 TinyXML2，这个项目还依赖<strong>三个 git 子模块</strong>（git submodule 就是把别的仓库嵌进本项目的一种引用方式），记录在根目录的 <code>.gitmodules</code> 里：<code>lib/epdiy</code>（<code>martinberlin/epdiy-rotation</code>，屏幕驱动）、<code>lib/touch</code>（<code>martinberlin/FT6X36-IDF</code>，触摸驱动）、<code>lib/png/PNGdec</code>（<code>atomic14/PNGdec</code>，PNG 解码）。子模块不会随普通 <code>git clone</code> 自动检出内容，所以 README 特意要求 <code>git clone --recursive</code>。</p>
 
   <p>怎么判断自己踩没踩这个坑？<code>ls lib/epdiy</code>——如果它是<strong>空目录</strong>，说明子模块根本没下来。漏掉 <code>--recursive</code> 的后果很直接：PlatformIO 编译时找不到 epdiy 的头文件，include 第一步就报错。补救也简单：在仓库根执行 <code>git submodule update --init --recursive</code>，内容会立刻补全。</p>
 
