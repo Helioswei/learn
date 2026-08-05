@@ -30,9 +30,9 @@
   <!-- ========== 12.1 渲染模型 ========== -->
   <h2>12.1 渲染模型：一页就是"一串带 y 坐标的元素"</h2>
 
-  <p>翻页时，<code>EpubReader::render()</code> 只做一件事：调用 <code>parser-&gt;render_page(state.current_page, renderer, epub)</code> 画当前这一页。而 <code>render_page</code> 的核心逻辑非常轻：先 <code>clear_screen()</code> 清空帧缓冲，然后让 <code>pages.at(page_index)</code> 自己把元素逐个画出来。<code>Page::render</code> 就是一个遍历——对 <code>elements</code> 里的每个 <code>PageElement</code> 调用它的 <code>render(renderer, epub)</code>。这正是 README 说的那句话：<em>"Rendering each page is trivial - we know the y position of each element on the page."</em>（渲染每页是琐碎的——我们已经知道每个元素在页面上的 y 位置。）分页阶段把最难的排版做完了，渲染只是执行。</p>
+  <p>翻页时，负责<strong>渲染</strong>（说人话：把内存里的画面数据变成屏幕上的显示，也就是把排好的内容"画出来"）的 <code>EpubReader::render()</code> 只做一件事：调用 <code>parser-&gt;render_page(state.current_page, renderer, epub)</code> 画当前这一页。而 <code>render_page</code> 的核心逻辑非常轻：先 <code>clear_screen()</code> 清空帧缓冲，然后让 <code>pages.at(page_index)</code> 自己把元素逐个画出来。<code>Page::render</code> 就是一个遍历——对 <code>elements</code> 里的每个 <code>PageElement</code> 调用它的 <code>render(renderer, epub)</code>。这正是 README 说的那句话：<em>"Rendering each page is trivial - we know the y position of each element on the page."</em>（渲染每页是琐碎的——我们已经知道每个元素在页面上的 y 位置。）分页阶段把最难的排版做完了，渲染只是执行。</p>
 
-  <p>元素各自知道怎么画自己：<code>PageLine</code> 把"来自哪个块、第几行"翻译成一次文本渲染；<code>PageImage</code> 把图片按已算好的坐标画出来。这套"接口 + 多态"的设计让 <code>Page</code> 完全不需要关心元素种类——加一种新元素（比如表格）时，只要它实现 <code>PageElement::render</code>，分页和渲染的骨架都不用动。看 <code>lib/Epub/RubbishHtmlParser/Page.h</code> 里的真实代码。</p>
+  <p>元素各自知道怎么画自己：<code>PageLine</code> 把"来自哪个块、第几行"翻译成一次文本渲染；<code>PageImage</code> 把图片按已算好的<strong>坐标</strong>（说人话：画面上的位置编号，用横向 x、纵向 y 两个数就能定位一个点）画出来。这套"接口 + 多态"的设计让 <code>Page</code> 完全不需要关心元素种类——加一种新元素（比如表格）时，只要它实现 <code>PageElement::render</code>，分页和渲染的骨架都不用动。看 <code>lib/Epub/RubbishHtmlParser/Page.h</code> 里的真实代码。</p>
 
 <pre><code><span class="cmt">/* Page.h：每个元素都自带"怎么画自己" */</span>
 <span class="kw">void</span> Page::render(Renderer *renderer, Epub *epub) {
@@ -109,7 +109,7 @@
   <span class="kw">return</span> m_regular_font;
 }</code></pre>
 
-  <p>图片的绘制则多一步"清场"。<code>ImageBlock::render</code> 在真正画图前，先用一个纯白矩形（<code>fill_rect(..., 255)</code>）盖住图片区域——这是为了擦掉上一页残留的文字像素；接着 <code>flush_area</code> 把这一小块局部刷新上屏（保证残影立刻消失），最后 <code>draw_image</code> 按分页时算好的 <code>x_pos/y_pos/width/height</code> 画图。解码 JPEG 还是 PNG 由 <code>Renderer::get_image_helper</code> 根据文件扩展名或文件头魔数自动判断；若解码失败，会退化成画一个占位矩形，保证页面不至于空缺。</p>
+  <p>图片的绘制则多一步"清场"。<code>ImageBlock::render</code> 在真正画图前，先用一个纯白矩形（<code>fill_rect(..., 255)</code>）盖住图片区域——这是为了擦掉上一页残留的文字<strong>像素</strong>（说人话：屏幕上最小的点，整个画面就是由无数这样的点拼出来的）；接着 <code>flush_area</code> 把这一小块局部刷新上屏（保证残影立刻消失），最后 <code>draw_image</code> 按分页时算好的 <code>x_pos/y_pos/width/height</code> 画图。解码 JPEG 还是 PNG 由 <code>Renderer::get_image_helper</code> 根据文件扩展名或文件头魔数自动判断；若解码失败，会退化成画一个占位矩形，保证页面不至于空缺。</p>
 
 <pre><code><span class="cmt">/* ImageBlock::render —— 先盖白再画图 */</span>
 <span class="type">void</span> ImageBlock::render(Renderer *renderer, Epub *epub, <span class="type">int</span> y_pos) {
@@ -183,7 +183,7 @@ m_frame_buffer = epd_hl_get_framebuffer(&amp;m_hl);
   <!-- ========== 12.4 双色与刷新速度 ========== -->
   <h2>12.4 双色 vs 灰阶：刷新速度的艺术</h2>
 
-  <p>回到 12.3 那段刷新代码里最"艺术"的一行：<code>needs_gray_flush ? MODE_GC16 : MODE_DU</code>。它把刷新分成两档——<strong><code>MODE_GC16</code></strong>（16 级灰阶全刷，画面细腻但要数百毫秒）；<strong><code>MODE_DU</code></strong>（直接更新，只保证纯黑白，速度快得多）。那么谁来决定走哪档？答案是渲染过程中埋下的一个开关：任何绘制只要使用了"非纯黑白"的颜色，<code>needs_gray(color)</code> 就会置位 <code>needs_gray_flush</code>，从而让下一次 <code>flush_display</code> 选择慢而全的 <code>GC16</code>。</p>
+  <p>回到 12.3 那段刷新代码里最"艺术"的一行：<code>needs_gray_flush ? MODE_GC16 : MODE_DU</code>。先补个背景概念：电子墨水屏有<strong>双色 vs 灰度</strong>之分（说人话：双色指每个像素只能非黑即白，灰度指像素还能显示多级深浅的灰，本项目两种都支持）。它把<strong>刷新模式</strong>（说人话：刷屏的时序方式——GC16 是逐级全屏慢刷，DU 是直接快速刷新，纯黑白内容与局部小区域都用 DU）分成两档——<strong><code>MODE_GC16</code></strong>（16 级灰阶全刷，画面细腻但要数百毫秒）；<strong><code>MODE_DU</code></strong>（直接更新，只保证纯黑白，速度快得多）。那么谁来决定走哪档？答案是渲染过程中埋下的一个开关：任何绘制只要使用了"非纯黑白"的颜色，<code>needs_gray(color)</code> 就会置位 <code>needs_gray_flush</code>，从而让下一次 <code>flush_display</code> 选择慢而全的 <code>GC16</code>。</p>
 
 <pre><code><span class="cmt">/* 只要画了非纯黑白的像素，就记下：这次需要 GC16 慢刷 */</span>
 <span class="type">void</span> needs_gray(<span class="type">uint8_t</span> color) {
