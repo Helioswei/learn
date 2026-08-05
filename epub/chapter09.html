@@ -12,7 +12,7 @@
 
 <div class="container">
   <h1>第9章：HTML 解析器——RubbishHtmlParser</h1>
-  <p class="chapter-subtitle">一份 XHTML 里有几十种标签，我们只留七种；其余的全部排除。</p>
+  <p class="chapter-subtitle">一份 XHTML 里有几十种<strong>标签</strong>，我们只留七种；其余的全部排除。（说人话：XHTML 是 HTML 的严格写法，而 <strong>HTML</strong> 就是网页的标记语言——用一对对尖括号标签描述文字结构；标签是像 <code>&lt;p&gt;</code>、<code>&lt;b&gt;</code> 这样被尖括号包起来的名字，元素则指标签连同它包住的那段内容。）</p>
 
   <div class="mentor-card">
     <div class="mentor-header">
@@ -32,9 +32,9 @@
 
   <p>名字就暴露了一切。<code>RubbishHtmlParser.h</code> 的头注释是一句大实话：<em>a very stupid xhtml parser - it will probably work for very simple cases but will probably fail for complex ones</em>（一个非常愚蠢的 XHTML 解析器——对付简单情况大概够用，复杂情况大概会挂）。作者不装不端，直接在类注释里承认这是个"垃圾解析器"。可垃圾不等于没用：README 说得很明白，"I've limited our parsing to a set of minimum tags that are enough to give us the basic structure of the book without making things too complicated"（我把解析限制在一组最小标签上，足以还原书的基本结构，又不会把事情搞复杂）。在嵌入式上，划定范围本身就是一种设计。</p>
 
-  <p>为什么"不解析 CSS"反而是加分项？CSS 是 EPUB 排版的真正主力，可它对嵌入式几乎全是负担：字号、行距、margin、颜色……每一项都对应额外的解析器与运行时开销。而电纸屏是单色的，项目只内置 4 种字体样式（regular / bold / italic / bold-italic，README 原话 "I've only included 4 font styles"）。所以 README 直接承认："we just use the standard HTML tags such as <code>&lt;h1&gt;</code>, <code>&lt;h2&gt;</code> etc. and <code>&lt;b&gt;</code> and <code>&lt;i&gt;</code>"（只用 h1、h2 这类标准标签和 b、i）。把 CSS 整个排除掉，不是做不到，而是"在约束下主动选择不做"——这正是第 1 章讲的约束匹配。</p>
+  <p>为什么"不解析 CSS"反而是加分项？<strong>CSS</strong>（说人话：控制网页样式的语言，字号、颜色、行距都归它管；本项目故意不解析它）是 EPUB 排版的真正主力，可它对嵌入式几乎全是负担：字号、行距、margin、颜色……每一项都对应额外的解析器与运行时开销。而电纸屏是单色的，项目只内置 4 种字体<strong>样式</strong>（说人话：样式就是粗体、斜体这类文字属性；这里内置 regular / bold / italic / bold-italic 四种，README 原话 "I've only included 4 font styles"）。所以 README 直接承认："we just use the standard HTML tags such as <code>&lt;h1&gt;</code>, <code>&lt;h2&gt;</code> etc. and <code>&lt;b&gt;</code> and <code>&lt;i&gt;</code>"（只用 h1、h2 这类标准标签和 b、i）。把 CSS 整个排除掉，不是做不到，而是"在约束下主动选择不做"——这正是第 1 章讲的约束匹配。</p>
 
-  <p>具体留哪些？看 <code>RubbishHtmlParser.cpp</code> 开头的六张标签表，一张表一类职责：<code>HEADER_TAGS</code>（h1–h6）、<code>BLOCK_TAGS</code>（p、li、div、br）、<code>BOLD_TAGS</code>（b）、<code>ITALIC_TAGS</code>（i）、<code>IMAGE_TAGS</code>（img），外加一张特殊的 <code>SKIP_TAGS</code>（head、table）。前五张是"认识谁"，最后一张是"不认识谁"——见到就整棵子树都不理。整个解析器的全部"知识"，就是这六张小小的字符串数组，外加一个 <code>matches()</code> 助手函数。</p>
+  <p>具体留哪些？看 <code>RubbishHtmlParser.cpp</code> 开头的六张标签表，一张表一类职责：<code>HEADER_TAGS</code>（h1–h6）、<code>BLOCK_TAGS</code>（p、li、div、br）、<code>BOLD_TAGS</code>（b）、<code>ITALIC_TAGS</code>（i）、<code>IMAGE_TAGS</code>（img），外加一张特殊的 <code>SKIP_TAGS</code>（head、table）。前五张是"认识谁"，最后一张是"不认识谁"——见到就整棵子树都不理。整个解析器的全部"知识"，就是这六张小小的字符串数组，外加一个 <code>matches()</code> 助手函数。在动手看表之前，先分清两个概念：<strong>块级标签</strong>（说人话：占一整行、自成一段的标签，如 p、h1、div）与<strong>行内标签</strong>（说人话：不另起一行、嵌在文本里只改样式的标签，如 b、i）。下面这张表，就是把六张表里的标签按这两类归了归类。</p>
 
 <pre><code><span class="cmt">/* RubbishHtmlParser.cpp：整个解析器的"全部知识"——六张标签表 */</span>
 <span class="kw">const</span> <span class="type">char</span> *HEADER_TAGS[] = {<span class="str">"h1"</span>, <span class="str">"h2"</span>, <span class="str">"h3"</span>, <span class="str">"h4"</span>, <span class="str">"h5"</span>, <span class="str">"h6"</span>};
