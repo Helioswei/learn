@@ -65,6 +65,13 @@ body.track-epub {
   --tip-bg: var(--paper-deep);
 }
 
+body.track-sifli {
+  --accent: #6a4f7a;
+  --accent-strong: #523a5e;
+  --accent-soft: #ece4f0;
+  --tip-bg: var(--paper-deep);
+}
+
 /* ===== 2. Base ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -407,6 +414,7 @@ details .answer-content {
 .track-card.kotlin { --accent: #b3402f; }
 .track-card.lvgl { --accent: #35536b; }
 .track-card.epub { --accent: #9a6a1f; }
+.track-card.sifli { --accent: #6a4f7a; }
 
 /* ===== 13. 目录页 TOC ===== */
 .track-hero { text-align: center; padding: 64px 0 8px; }

@@ -114,6 +114,41 @@ window.SITE_NAV = {
           { num: 16, title: "移植、优化与展望", mentor: "费曼", method: "教是最好的学" }
         ]}
       ]
+    },
+    {
+      id: "sifli",
+      name: "SF32 电子书移植实战",
+      accent: "#6a4f7a",
+      desc: "SF32 电子书移植实战（SiFli SF32-OED-EPD）",
+      tagline: "从 ESP32 到 SiFli：一个 EPUB 阅读器的跨平台移植实战，含中文字体、触控、电量管理与完成度盘点",
+      parts: [
+        { title: "认识项目", chapters: [
+          { num: 1, title: "项目概览：从 ESP32 到 SiFli 的移植", mentor: "费曼", method: "第一性原理" },
+          { num: 2, title: "平台与构建：SiFli SDK + SCons", mentor: "鲁班", method: "工欲善其事" }
+        ]},
+        { title: "硬件平台", chapters: [
+          { num: 3, title: "板级配置：v11 / v12 / SPI 多板", mentor: "鲁班", method: "工欲善其事" },
+          { num: 4, title: "显示驱动：DBI 与 SPI 墨水屏", mentor: "达芬奇", method: "艺术与工程" },
+          { num: 5, title: "输入控制：按键 + 触控", mentor: "狄仁杰", method: "系统分析" },
+          { num: 6, title: "电池与低功耗", mentor: "包青天", method: "铁面无私" }
+        ]},
+        { title: "解析与渲染", chapters: [
+          { num: 7, title: "EPUB 解析：继承与中文适配", mentor: "柯南", method: "真相只有一个" },
+          { num: 8, title: "中文字体与动态字体加载", mentor: "鲁班", method: "工欲善其事" },
+          { num: 9, title: "阅读设置与持久化", mentor: "诸葛亮", method: "运筹帷幄" },
+          { num: 10, title: "渲染器与页面绘制", mentor: "达芬奇", method: "艺术与工程" }
+        ]},
+        { title: "UI 与状态机", chapters: [
+          { num: 11, title: "UI 状态机总览", mentor: "诸葛亮", method: "运筹帷幄" },
+          { num: 12, title: "书库、目录与阅读流程", mentor: "狄仁杰", method: "系统分析" },
+          { num: 13, title: "覆盖操作层与触控区域", mentor: "柯南", method: "真相只有一个" }
+        ]},
+        { title: "现状与展望", chapters: [
+          { num: 14, title: "已实现功能盘点", mentor: "包青天", method: "铁面无私" },
+          { num: 15, title: "未实现与待完善", mentor: "费曼", method: "第一性原理" },
+          { num: 16, title: "二次开发与移植新屏", mentor: "鲁班", method: "工欲善其事" }
+        ]}
+      ]
     }
   ]
 };
