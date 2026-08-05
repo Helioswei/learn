@@ -81,7 +81,7 @@
   <!-- ========== 5.2 按键电路与电平 ========== -->
   <h2>5.2 按键电路与电平：active high vs active low</h2>
 
-  <p>物理世界里，一个机械按键只有两种状态：<strong>按下</strong>与<strong>松开</strong>。但同一件事放到单片机的 GPIO 引脚上，却有两种截然相反的接法。如果按键一端接地、另一端接 GPIO 并外接（或启用内部）上拉电阻，那么松开时引脚读到高电平、按下时被拉到低电平——这叫<strong>低电平有效（active low）</strong>；反过来，按键一端接电源、引脚下拉，松开读低、按下读高，就是<strong>高电平有效（active high）</strong>。项目里的 <code>active_level</code> 参数，就是告诉驱动"按下时引脚到底是 0 还是 1"。</p>
+  <p>物理世界里，一个<strong>按键</strong>（物理按钮：按下时让电路导通、松开后断开）只有两种状态：<strong>按下</strong>与<strong>松开</strong>。但同一件事放到单片机的 GPIO 引脚上，却有两种截然相反的接法——差别全在引脚读到哪种<strong>电平</strong>（高/低电平，说白了就是引脚上量到 3.3V 还是 0V）。如果按键一端接地、另一端接 GPIO 并外接（或启用内部）上拉电阻，那么松开时引脚读到高电平、按下时被拉到低电平——这叫<strong>低电平有效（active low）</strong>：说人话就是"按下时引脚读到低电平，这次按压才有效"；反过来，按键一端接电源、引脚下拉，松开读低、按下读高，就是<strong>高电平有效（active high）</strong>——按下时引脚读到高电平才算有效。项目里的 <code>active_level</code> 参数，就是告诉驱动"按下时引脚到底是 0 还是 1"。</p>
 
   <p>这个选择不是随心所欲的，它直接决定了硬件的接法，进而决定了软件配置。看 <code>GPIOButton</code> 构造函数：它根据 <code>active_level</code> 二选一地设置内部电阻——低有效配上拉（<code>GPIO_PULLUP_ONLY</code>），高有效配下拉（<code>GPIO_PULLDOWN_ONLY</code>）；中断触发类型同样二选一——低有效用 <code>GPIO_INTR_LOW_LEVEL</code>，高有效用 <code>GPIO_INTR_HIGH_LEVEL</code>。注意这里用的是<strong>电平触发</strong>而不是边沿触发，原因在 5.3 揭晓。更深一层，低有效按键在深睡眠时只能靠 ULP 协处理器唤醒，高有效则可以用更省事的 EXT1 唤醒——这个差异到第 15 章会展开，现在先记住"电平决定唤醒路线"这条线索。</p>
 
@@ -126,7 +126,7 @@ GPIOButton::GPIOButton(gpio_num_t gpio_pin, <span class="type">int</span> active
   <!-- ========== 5.3 GPIOButtonControls 实现 ========== -->
   <h2>5.3 GPIOButtonControls：去抖与按下/释放检测</h2>
 
-  <p>机械按键有一个天敌叫<strong>抖动</strong>：触点接触的瞬间，金属簧片会高速弹跳几十毫秒，导致同一个按键在极短时间内被"读"到很多次电平翻转。如果直接在这些翻转上触发动作，一次按键会被翻译成四五次"上一页"，用户就会看到画面连跳好几页。所以任何正经的按键驱动，第一件事都是<strong>去抖</strong>。最常见的做法是"检测到电平变化后延时十几毫秒再读一次"，本项目的做法却更有嵌入式味道：<strong>用时间戳判断一次按压的时长</strong>。</p>
+  <p>机械按键有一个天敌叫<strong>抖动</strong>：触点接触的瞬间，金属簧片会高速弹跳几十毫秒，导致同一个按键在极短时间内被"读"到很多次电平翻转。如果直接在这些翻转上触发动作，一次按键会被翻译成四五次"上一页"，用户就会看到画面连跳好几页。所以任何正经的按键驱动，第一件事都是<strong>去抖</strong>（debounce，把按键抖动造成的多次触发过滤掉，让一次物理按压只算一次）。最常见的做法是"检测到电平变化后延时十几毫秒再读一次"，本项目的做法却更有嵌入式味道：<strong>用时间戳判断一次按压的时长</strong>。</p>
 
   <p>看 <code>GPIOButton::handle_interrupt()</code> 的逻辑：它维护一个 <code>button_pressed</code> 标志位和 <code>button_press_start</code> 时间戳，每次中断都让引脚在"按下"与"松开"两种触发类型间翻转。按下时记下起始时刻，松开时计算持续时长——只有当 <code>松开时刻 - 按下时刻 &gt; BUTTON_DEBOUNCE</code> 时才把这次按压算作有效，调用回调。抖动的本质是毫秒级的快速翻转，不可能超过去抖阈值，所以它天然被过滤掉；而真正的长按（哪怕只持续 100 ms）则稳稳通过。</p>
 
@@ -158,7 +158,7 @@ GPIOButton::GPIOButton(gpio_num_t gpio_pin, <span class="type">int</span> active
 
   <p>为什么用"电平触发 + 时长判定"而不是"边沿触发"？代码注释给了答案：edge interrupts seem to be flaky（边沿中断似乎不太可靠）。电平触发在引脚状态稳定时只触发一次，而边沿触发可能漏掉、重复触发；再加上 ESP32 的中断服务函数运行在 IRAM、不能做耗时操作，所以中断里只记时间戳，把"判定"留在中断上下文中完成，也算量小可控。整个检测是<strong>无阻塞</strong>的：没有 <code>delay()</code>，只读一次 <code>esp_timer_get_time()</code>，把对主线程的影响压到最低。</p>
 
-  <p>三路按键由 <code>GPIOButtonControls</code> 统一创建：构造时对 <code>up</code>/<code>down</code>/<code>select</code> 三个 GPIO 各 new 一个 <code>GPIOButton</code>，并把各自的回调包装成"往 <code>on_action</code> 里塞一个 <code>UIAction</code>"。而 <code>on_action</code> 来自板子的 <code>get_button_controls()</code>——它是个 lambda，把 UIAction 通过 <code>xQueueSend</code> 扔进 FreeRTOS 消息队列。于是按键与 UI 之间隔着一道"队列缓冲"，中断里只入队，主任务排队出队，天然解耦了实时中断与慢速渲染。</p>
+  <p>三路按键由 <code>GPIOButtonControls</code> 统一创建：构造时对 <code>up</code>/<code>down</code>/<code>select</code> 三个 GPIO 各 new 一个 <code>GPIOButton</code>，并把各自的回调包装成"往 <code>on_action</code> 里塞一个 <code>UIAction</code>"。而 <code>on_action</code> 来自板子的 <code>get_button_controls()</code>——它是个 lambda，把 UIAction 通过 <code>xQueueSend</code> 扔进 FreeRTOS 消息队列。这里的每一次按键就是一条<strong>事件</strong>（"刚发生了什么"的通知），<strong>队列</strong>（queue）则是存放这些事件、先进先出的"待办清单"：中断只管往队尾投，主程序忙完一件再取一件，来得再急也不怕丢。于是按键与 UI 之间隔着一道"队列缓冲"，中断里只入队，主任务排队出队，天然解耦了实时中断与慢速渲染。</p>
 
 <pre><code><span class="cmt">/* GPIOButtonControls.cpp：三个 GPIOButton + 三条回调，统一汇入 on_action */</span>
 GPIOButtonControls::GPIOButtonControls(
@@ -187,7 +187,7 @@ GPIOButtonControls::GPIOButtonControls(
   <!-- ========== 5.4 状态机 ========== -->
   <h2>5.4 状态机：列表态 ↔ 阅读态的按键路由</h2>
 
-  <p>同一个 UP 键，在书单里是"上移"，在阅读里是"上一页"——它凭什么知道自己该干嘛？答案是：<strong>UI 层有一个当前状态，按键行为完全由这个状态决定</strong>。这个状态就是 <code>main.cpp</code> 顶部的 <code>UIState</code>，共三态：<code>SELECTING_EPUB</code>（书目列表）、<code>SELECTING_TABLE_CONTENTS</code>（章节目录）、<code>READING_EPUB</code>（阅读）。注意它挂在 <code>RTC_NOINIT_ATTR</code> 上——这段内存深睡眠期间不断电，醒来后设备还记得自己在哪个界面。这与第 15 章的深睡眠紧密相关。</p>
+  <p>同一个 UP 键，在书单里是"上移"，在阅读里是"上一页"——它凭什么知道自己该干嘛？答案是：<strong>UI 层有一个当前状态，按键行为完全由这个状态决定</strong>。这种"程序守在几个状态里、收到事件就在状态之间切换"的设计，就叫<strong>状态机</strong>（state machine，一个在不同"状态"之间按事件跳转的模型）。这个状态就是 <code>main.cpp</code> 顶部的 <code>UIState</code>，共三态：<code>SELECTING_EPUB</code>（书目列表）、<code>SELECTING_TABLE_CONTENTS</code>（章节目录）、<code>READING_EPUB</code>（阅读）。注意它挂在 <code>RTC_NOINIT_ATTR</code> 上——这段内存深睡眠期间不断电，醒来后设备还记得自己在哪个界面。这与第 15 章的深睡眠紧密相关。</p>
 
   <p>路由的总开关是 <code>handleUserInteraction()</code>：进来先看 <code>ui_state</code> 在哪，再把动作派发给对应的 handler。于是"三按键"复用出三层界面，每次按键都像一次"案件移送"：大理寺先看卷宗编号（状态），再决定派哪个衙役（handler）处理。SELECT 的三种去处也因此一目了然——列表态进目录、目录态进阅读、阅读态删掉 reader 回列表。这套状态机简单到只有一条链路，却是全书交互的地基。</p>
 
