@@ -32,9 +32,9 @@
 
   <p>电子墨水屏的像素，本质是一粒粒<strong>微胶囊</strong>（microcapsule）：胶囊里悬浮着带负电的黑色微粒和带正电的白色微粒，浸泡在透明液体里。对每个像素施加一个电场，就把对应颜色的粒子"推"到胶囊朝上的一面，从而呈现黑、白或中间灰。关键在电场撤掉之后：粒子并不会乱跑，而是被静电与介质黏住，稳稳停在原处——这就是<strong>双稳态</strong>（bistable）。只要不重新施加电场，画面就永远保持，连维持供电都不需要。</p>
 
-  <p>由此可以推出三个工程特性。第一，<strong>反射式显示</strong>：屏幕本身不发光，靠环境光成像，无背光、无频闪，长时间看也接近纸张的观感。第二，<strong>静态零功耗</strong>：画面定格后不再耗电，只有重新刷新那一下才消耗能量——这正是 1.1 里"一页能停几个星期"的物理根源。第三，<strong>刷新慢</strong>：要重新驱动胶囊里的粒子运动，全屏刷新需要数百毫秒，切换的瞬间画面还会闪一下。把这三个特性对照"阅读"这个场景，结论很清晰：反射式与零功耗被放大成巨大优势，刷新慢的缺点则被"翻页才刷新"的使用方式完全掩盖。</p>
+  <p>由此可以推出三个工程特性。第一，<strong>反射式显示</strong>：屏幕本身不发光，靠环境光成像，无背光、无频闪，长时间看也接近纸张的观感。第二，<strong>静态零功耗</strong>：画面定格后不再耗电，只有重新刷新那一下才消耗能量——这正是 1.1 里"一页能停几个星期"的物理根源。第三，<strong>刷新慢</strong>：要重新驱动胶囊里的粒子运动，全屏刷新需要数百毫秒，切换的瞬间画面还会闪一下。刷新并非瞬间完成——屏幕的<strong>显示控制器</strong>要按一套精确的<strong>时序</strong>（也就是波形），把一串串电压脉冲依次加在墨粒上，才能把它们翻到目标灰度。把这三个特性对照"阅读"这个场景，结论很清晰：反射式与零功耗被放大成巨大优势，刷新慢的缺点则被"翻页才刷新"的使用方式完全掩盖。</p>
 
-  <p>正因为"刷新慢 + 双稳态"，电子墨水屏的编程模型和 LCD 完全不同——不是"每一帧重绘画面"，而是<strong>"把整页画进帧缓冲 → 一次性刷上屏 → 定格"</strong>。这也是全书反复出现的代码结构：绘制可以调用很多次，但"上屏"只在需要的时候调用一次。项目自己的 <code>Renderer</code> 抽象把这两件事拆开了——<code>Renderer.h</code> 里 <code>flush_display()</code> / <code>flush_area()</code> 就是那道"上屏"的闸门，默认空实现，由各屏幕驱动覆写。</p>
+  <p>正因为"刷新慢 + 双稳态"，电子墨水屏的编程模型和 LCD 完全不同——不是"每一帧重绘画面"，而是<strong>"把整页画进帧缓冲 → 一次性刷上屏 → 定格"</strong>。所谓<strong>帧缓冲</strong>（framebuffer），说白了就是一块内存：先把整页内容画好，再一次整屏送显。这也是全书反复出现的代码结构：绘制可以调用很多次，但"上屏"只在需要的时候调用一次。项目自己的 <code>Renderer</code> 抽象把这两件事拆开了——<code>Renderer.h</code> 里 <code>flush_display()</code> / <code>flush_area()</code> 就是那道"上屏"的闸门，默认空实现，由各屏幕驱动覆写。</p>
 
 <pre><code><span class="cmt">/* 电子墨水屏的工作节奏：绘制可以很多次，上屏只此一回 */</span>
 应用代码
@@ -141,7 +141,7 @@ m_frame_buffer = <span class="fn">epd_hl_get_framebuffer</span>(&amp;m_hl);  <sp
 
   <p>这个标志的置位逻辑在 <code>EpdiyFrameBufferRenderer::needs_gray(color)</code> 里：只要画进去的像素 <code>color</code> 不是 <code>0</code>（纯黑）也不是 <code>255</code>（纯白），就置位 <code>needs_gray_flush = true</code>。换句话说，"我画了一个中间灰"就等于向渲染器承诺：下一次全刷必须走 GC16，因为 DU 只支持二值。项目的字体是两色压缩的，正常文字不会触发；但抗锯齿的图标、图片缩略图这类带灰度的内容会。所以这是一个藏在绘制层、由数据自动驱动的决策——应用代码只需要"画灰像素时打一个标记"。</p>
 
-  <p>再看<strong>局部刷新</strong>。<code>flush_area(x, y, w, h)</code> 用 <code>epd_hl_update_area</code> 只刷新屏上一个矩形区域，且固定使用 MODE_DU——因为 DU 是唯一支持"部分区域"的模式。沙漏图标（<code>show_busy()</code>）、电池电量、触摸反馈这些小块更新都用它，避免整屏闪烁。但局部刷的残影会随次数累积，所以积累到一定程度仍需一次 GC16 或 <code>epd_fullclear()</code> 来清屏。<code>temperature</code> 参数贯穿始终：墨水响应速度随温度变化，波形需要按温度补偿（<code>Renderer</code> 里默认 <code>temperature = 20</code>）。</p>
+  <p>再看<strong>局部刷新</strong>——说人话：全刷把整块屏一次性重刷，慢但干净；局部刷新只重画屏上的一小块，快，但会留残影。<code>flush_area(x, y, w, h)</code> 用 <code>epd_hl_update_area</code> 只刷新屏上一个矩形区域，且固定使用 MODE_DU——因为 DU 是唯一支持"部分区域"的模式。沙漏图标（<code>show_busy()</code>）、电池电量、触摸反馈这些小块更新都用它，避免整屏闪烁。但局部刷的残影会随次数累积，所以积累到一定程度仍需一次 GC16 或 <code>epd_fullclear()</code> 来清屏。<code>temperature</code> 参数贯穿始终：墨水响应速度随温度变化，波形需要按温度补偿（<code>Renderer</code> 里默认 <code>temperature = 20</code>）。</p>
 
 <pre><code><span class="cmt">/* EpdiyRenderer.h（节选）：全刷与局部刷，一个在速度与干净之间权衡 */</span>
 <span class="kw">void</span> <span class="fn">flush_display</span>()
