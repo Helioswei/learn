@@ -30,9 +30,9 @@
   <!-- ========== 13.1 电子书里的图：封面、插图、图像作为块 ========== -->
   <h2>13.1 电子书里的图：封面图、书内插图、图像作为块</h2>
 
-  <p>在一本 EPUB 里，图像有两个完全不同的身份。第一个是<strong>封面图</strong>：它不在章节的 XHTML 里，而是被记录在 <code>OEBPS/content.opf</code> 的 <code>metadata</code> 里——一个 <code>name="cover"</code> 的 <code>meta</code> 标签，其 <code>content</code> 属性指向 <code>manifest</code> 中某件资源的 id。<code>Epub.cpp</code> 解析时正是顺着这条链找到封面：先遍历 <code>meta</code> 找 <code>name="cover"</code> 的项，拿到 <code>cover_item</code>，再在 manifest 里匹配 <code>item_id == cover_item</code> 的元素，把它的 <code>href</code> 存进 <code>m_cover_image_item</code>。之后书目列表页用 <code>get_cover_image_item()</code> 一行就能取到封面地址。</p>
+  <p>在一本 EPUB 里，图像有两个完全不同的身份。第一个是<strong>封面图</strong>（说人话：书在书架上的"门面"大图，好比纸质书封面印的那张画）：它不在章节的 XHTML 里，而是被记录在 <code>OEBPS/content.opf</code> 的 <code>metadata</code> 里——一个 <code>name="cover"</code> 的 <code>meta</code> 标签，其 <code>content</code> 属性指向 <code>manifest</code> 中某件资源的 id。<code>Epub.cpp</code> 解析时正是顺着这条链找到封面：先遍历 <code>meta</code> 找 <code>name="cover"</code> 的项，拿到 <code>cover_item</code>，再在 manifest 里匹配 <code>item_id == cover_item</code> 的元素，把它的 <code>href</code> 存进 <code>m_cover_image_item</code>。之后书目列表页用 <code>get_cover_image_item()</code> 一行就能取到封面地址。</p>
 
-  <p>第二个身份是<strong>书内插图</strong>：它们嵌在章节 XHTML 的 <code>&lt;img&gt;</code> 标签里。仓库自带的两本示例书恰好各有代表性——<code>data/pg43-images.epub</code>（约 304 KB）里有一张 <code>cover.jpg</code>（222,685 字节）；<code>data/pg14838-images.epub</code>（约 1.4 MB）则塞了一打插图（<code>peter04.jpg</code>、<code>peter08.jpg</code>、<code>peter11.jpg</code>…还混着一张 <code>peter02.gif</code>）。文件名里的 <code>-images</code> 后缀是作者的提示：这是本带插图的书。书目列表渲染封面时，会先把封面按固定比例（<code>image_width = 2 * image_height / 3</code>，约 3:2 竖版缩略图）缩放再画出来。</p>
+  <p>第二个身份是<strong>书内插图</strong>：它们嵌在章节 XHTML 的 <code>&lt;img&gt;</code> 标签里。仓库自带的两本示例书恰好各有代表性——<code>data/pg43-images.epub</code>（约 304 KB）里有一张 <code>cover.jpg</code>（222,685 字节）；<code>data/pg14838-images.epub</code>（约 1.4 MB）则塞了一打插图（<code>peter04.jpg</code>、<code>peter08.jpg</code>、<code>peter11.jpg</code>…还混着一张 <code>peter02.gif</code>）。文件名里的 <code>-images</code> 后缀是作者的提示：这是本带插图的书。书目列表渲染封面时，会先把封面按固定比例（<code>image_width = 2 * image_height / 3</code>，约 3:2 竖版缩略图）<strong>缩放</strong>再画出来——说人话：改变图片的尺寸，这里指把大图按比例缩小，让它能在小小的屏幕里放得下。</p>
 
   <p>把两种图像统一进"块"模型的，是 <code>RubbishHtmlParser</code>。解析器维护一张 <code>IMAGE_TAGS[] = {"img"}</code> 的清单，遇到 <code>&lt;img&gt;</code> 标签就新建一个 <code>ImageBlock(m_base_path + src)</code>：<code>m_src</code> 记录 src 属性，并与章节所在目录 <code>m_base_path</code> 拼接成完整路径。图片块和文本块一样被推进 <code>blocks</code> 列表，经历"布局算坐标 → 分页分配 → 渲染绘制"三段旅程——这正是第 11、12 章那套"分页记账、渲染执行"的分工。看真实代码。</p>
 
@@ -86,7 +86,7 @@
   <!-- ========== 13.2 解码：PNGdec 与 TJpgDec ========== -->
   <h2>13.2 解码：PNG（PNGdec）与 JPEG（TJpgDec）在 ESP32 上怎么把图解出来</h2>
 
-  <p>拿到图片字节后，第一步是决定"谁来解它"——<code>Renderer::get_image_helper</code> 干这件事。判定顺序有两条：先看文件扩展名（<code>.jpg</code> / <code>.jpeg</code> / <code>.png</code>），扩展名骗不了人的时候再看文件头魔数——JPEG 以 <code>0xFF 0xD8 0xFF</code> 开头，PNG 以 <code>0x89 'P' 'N' 'G'</code> 开头。这是嵌入式里的常见双保险：靠数据说话，不轻信名字。两个 helper 都是<strong>懒创建</strong>的（<code>png_helper</code> / <code>jpeg_helper</code> 首次用到某格式才 <code>new</code>），因为解码器对象本身也要占内存。</p>
+  <p>拿到图片字节后，第一步是决定"谁来解它"——<code>Renderer::get_image_helper</code> 干这件事。先认识两个名词：<strong>解码</strong>（说人话：把压缩过的图片数据还原成屏幕能直接画出来的像素），负责干这活的代码叫<strong>解码器</strong>；<strong>PNG</strong> 和 <strong>JPEG</strong> 则是两种最常见的图片格式——PNG 无损，适合图标、线条图这类边界清晰的图；JPEG 有损，适合照片，体积更小。判定顺序有两条：先看文件扩展名（<code>.jpg</code> / <code>.jpeg</code> / <code>.png</code>），扩展名骗不了人的时候再看文件头魔数——JPEG 以 <code>0xFF 0xD8 0xFF</code> 开头，PNG 以 <code>0x89 'P' 'N' 'G'</code> 开头。这是嵌入式里的常见双保险：靠数据说话，不轻信名字。两个 helper 都是<strong>懒创建</strong>的（<code>png_helper</code> / <code>jpeg_helper</code> 首次用到某格式才 <code>new</code>），因为解码器对象本身也要占内存。</p>
 
 <pre><code><span class="cmt">/* Renderer.cpp：按扩展名或魔数选择解码器 */</span>
 ImageHelper *Renderer::get_image_helper(<span class="kw">const</span> std::string &amp;filename,
@@ -156,7 +156,7 @@ jd_decomp(&amp;dec, draw_jpeg_function, scale_factor);  <span class="cmt">// 按
 
   <div class="tip">
     <div class="tip-title">达芬奇提示</div>
-    <p>两种解码器有个共同点：都按"小块/逐行"<em>流式</em>输出，而不是把整张解码好的位图一次性堆在内存里——这是嵌入式解码的第一原则，让工作区与图像大小解耦。PNG 用行回调、JPEG 用矩形块回调，回调里还都塞了一个 <code>vTaskDelay(1)</code>：解码很耗 CPU，定时让出时间片既能喂看门狗，也不至于卡死同核上的其他任务。</p>
+    <p>两种解码器有个共同点：都按"小块/逐行"<em>流式</em>输出，而不是把整张解码好的<strong>位图</strong>（Bitmap，一个像素一格的点阵图像，解码的终点就是把它还原出来）一次性堆在内存里——这是嵌入式解码的第一原则，让工作区与图像大小解耦。PNG 用行回调、JPEG 用矩形块回调，回调里还都塞了一个 <code>vTaskDelay(1)</code>：解码很耗 CPU，定时让出时间片既能喂看门狗，也不至于卡死同核上的其他任务。</p>
   </div>
 
   <!-- ========== 13.3 缩放：读宽高 → 等比缩到屏幕 → 算块高度 ========== -->
