@@ -30,7 +30,7 @@
   <!-- ========== 11.1 问题：从"一串块"到"一页页" ========== -->
   <h2>11.1 问题：从"一串块"到"一页页"</h2>
 
-  <p>回顾整条流水线：<code>RubbishHtmlParser</code> 解析完一章的 XHTML 后，得到一串 <code>std::list&lt;Block *&gt; blocks</code>。其中 <code>TextBlock</code> 已经用动态规划算好了断行点（存在 <code>line_breaks</code> 里），<code>ImageBlock</code> 已经记下图片源路径。但这一串 <code>blocks</code> 本质上是一条"不知道尽头在哪"的长卷——它自己根本不知道会被切成几页。电子墨水屏的每一页只有固定高度 <code>page_height</code>（由渲染器的 <code>get_page_height()</code> 提供）。<strong>分页（pagination）就是把这卷长卷，裁剪成一张张固定高度的页。</strong></p>
+  <p>回顾整条流水线：<code>RubbishHtmlParser</code> 解析完一章的 XHTML 后，得到一串 <code>std::list&lt;Block *&gt; blocks</code>（<strong>块</strong>，说人话：排版里的最小单元，一段文字或一张图片就是一个块）。其中 <code>TextBlock</code> 已经用动态规划算好了断行点（存在 <code>line_breaks</code> 里），<code>ImageBlock</code> 已经记下图片源路径。但这一串 <code>blocks</code> 本质上是一条"不知道尽头在哪"的长卷——它自己根本不知道会被切成几页。电子墨水屏的每一页只有固定高度 <code>page_height</code>（说人话：<strong>页高</strong>就是屏幕一页能放多少行内容的总高度，超出就得另起一页；由渲染器的 <code>get_page_height()</code> 提供）。<strong>分页</strong>（pagination，说人话：把排好的内容按一屏一屏切分开，每屏就是一页）就是把这卷长卷，裁剪成一张张固定高度的页。</p>
 
   <p>分页的输出是一个 <code>std::vector&lt;Page *&gt; pages</code>。每个 <code>Page</code> 只回答一个问题："这一页放了哪些元素？" 而每个元素（<code>PageElement</code>）记录两样东西：它来自哪个 <code>block</code>、以及它在本页的 <code>y_pos</code>（纵向位置）。这里的精髓在于：<strong>分页阶段一个像素都不画</strong>，它只做"记账"——把每个行/每张图应放的位置记下来，真正的绘制留到下一章。看 <code>lib/Epub/RubbishHtmlParser/Page.h</code> 里的真实定义。</p>
 
@@ -54,7 +54,7 @@
   std::vector&lt;PageElement *&gt; elements;   <span class="cmt">// 本页的所有元素</span>
 };</code></pre>
 
-  <p>分页工作的入口是 <code>RubbishHtmlParser::layout(renderer, epub)</code>。它先做两件准备工作：从渲染器取行高与页高，然后让每个 block 先自己"排好版"——文本块断行、图片块缩放。注意第二个循环里的 <code>vTaskDelay(1)</code>：解析整章可能很耗时，每次处理一个 block 就喂一次看门狗，避免触发 FreeRTOS 看门狗复位。这是嵌入式代码里"长任务主动让出"的典型写法。</p>
+  <p>分页工作的入口是 <code>RubbishHtmlParser::layout(renderer, epub)</code>。它先做两件准备工作：从渲染器取<strong>行高</strong>（说人话：一行文字占多高；用页高除以行高，就能算出一页能放几行）与页高，然后让每个 block 先自己"排好版"——文本块断行、图片块缩放。注意第二个循环里的 <code>vTaskDelay(1)</code>：解析整章可能很耗时，每次处理一个 block 就喂一次看门狗，避免触发 FreeRTOS 看门狗复位。这是嵌入式代码里"长任务主动让出"的典型写法。</p>
 
 <pre><code><span class="cmt">/* RubbishHtmlParser::layout —— 分页前的准备 */</span>
 <span class="kw">const</span> <span class="type">int</span> line_height = renderer-&gt;get_line_height();   <span class="cmt">// 一行多高</span>
@@ -113,7 +113,7 @@ x_pos = (renderer-&gt;get_page_width() - width) / <span class="num">2</span>;</c
   <!-- ========== 11.3 装填策略 ========== -->
   <h2>11.3 装填策略：从当前 y 开始放，放不下就开新页</h2>
 
-  <p>准备好了高度，就可以装填了。分页主循环非常直白：用一个 <code>y</code> 指针跟踪"当前页已经用掉了多少高度"，从 0 开始；对每个文本块逐行、对每张图片逐个处理——<code>y + 元素高度 &gt; page_height</code> 就说明当前页放不下这个元素了，于是开一张新页并把 <code>y</code> 清零，再从页顶开始放。下面是 <code>RubbishHtmlParser::layout</code> 分页部分的完整真实代码。</p>
+  <p>准备好了高度，就可以<strong>装填</strong>（说人话：按顺序把一个个块放进当前页，这一页放不下了就另起一页再继续放）了。分页主循环非常直白：用一个 <code>y</code> 指针跟踪"当前页已经用掉了多少高度"，从 0 开始；对每个文本块逐行、对每张图片逐个处理——<code>y + 元素高度 &gt; page_height</code> 就说明当前页放不下这个元素了，于是开一张新页并把 <code>y</code> 清零，再从页顶开始放。下面是 <code>RubbishHtmlParser::layout</code> 分页部分的完整真实代码。</p>
 
 <pre><code><span class="cmt">/* RubbishHtmlParser::layout —— 分页主循环 */</span>
 <span class="type">int</span> y = <span class="num">0</span>;
