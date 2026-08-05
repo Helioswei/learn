@@ -1,9 +1,10 @@
 # Helios 技术教程
 
-**Kotlin + LVGL 双技术线**系统化学习站。一条技术线一条目录，共用同一套设计系统与导航，纯 HTML + CSS + 原生 JavaScript 静态站，零依赖、无构建工具，可直接部署到 GitHub Pages。
+**多技术线**系统化学习站（Kotlin · LVGL · ESP32 电子墨水屏）。一条技术线一条目录，共用同一套设计系统与导航，纯 HTML + CSS + 原生 JavaScript 静态站，零依赖、无构建工具，可直接部署到 GitHub Pages。
 
 - **Kotlin** — Kotlin Android 开发教程（16 章）：从语言特性到 Android 实战，为有编程基础的开发者打造的系统化学习路径。
 - **LVGL** — LVGL 嵌入式图形库教程（16 章）：从 MCU 到桌面模拟器，以真实 LVGL 源码仓库（9.6.0-dev）为案例，系统掌握嵌入式图形开发。
+- **ESP32 电子墨水屏** — ESP32 电子书阅读器实战（16 章）：从零解剖一个真实项目，覆盖 EPUB 解析、电子墨水屏渲染、低功耗设计（ESP-IDF / PlatformIO / EPDiy）。
 
 ## 在线阅读
 
@@ -24,12 +25,13 @@ learn/
 ├── preview.html      设计系统预览页（开发参考）
 ├── kotlin/           index.html + chapter01-16.html（Kotlin 技术线）
 ├── lvgl/             index.html + chapter01-16.html（LVGL 技术线，9.6.0-dev 内容）
+├── epub/             index.html + chapter01-16.html（ESP32 电子墨水屏技术线）
 └── tools/            check-links.js 链接校验脚本
 ```
 
 ## 章节导航
 
-分部、章节与导师均由 `site-nav.js` 的 `SITE_NAV` / `MENTORS` 数据驱动，以下两张表即其导出内容；新增或调整章节只需修改该文件，全站导航、目录、上一章/下一章自动同步。
+分部、章节与导师均由 `site-nav.js` 的 `SITE_NAV` / `MENTORS` 数据驱动，以下三张表即其导出内容；新增或调整章节只需修改该文件，全站导航、目录、上一章/下一章自动同步。
 
 ### Kotlin 技术线
 
@@ -73,6 +75,27 @@ learn/
 |  | 15 | 集成与多平台部署 | 包青天 |
 |  | 16 | 生态、成长路线与资源 | 费曼 |
 
+### ESP32 电子墨水屏技术线
+
+| 分部 | 章节 | 标题 | 导师 |
+|------|------|------|------|
+| 认识项目 | 01 | 项目概览：DIY ESP32 电子书阅读器 | 费曼 |
+|  | 02 | 开发环境搭建（PlatformIO + ESP-IDF） | 鲁班 |
+| 硬件与底层 | 03 | 电子墨水屏与 EPDiy | 鲁班 |
+|  | 04 | 板级抽象：Board 工厂 | 诸葛亮 |
+|  | 05 | 输入控制：三按键导航 | 狄仁杰 |
+|  | 06 | 存储：SD 卡与 SPIFFS | 鲁班 |
+| EPUB 解析 | 07 | EPUB 格式解密（zip + miniz） | 柯南 |
+|  | 08 | XML 解析：content.opf（TinyXML2） | 柯南 |
+|  | 09 | HTML 解析器 RubbishHtmlParser | 福尔摩斯 |
+|  | 10 | 文本换行布局（动态规划） | 费曼 |
+|  | 11 | 分页算法 | 诸葛亮 |
+| 渲染与体验 | 12 | 渲染到电子墨水屏 | 达芬奇 |
+|  | 13 | 图像处理与缩放 | 达芬奇 |
+|  | 14 | 字体生成 | 鲁班 |
+| 低功耗与实战 | 15 | 深睡眠与低功耗（ULP/EXT1） | 包青天 |
+|  | 16 | 移植、优化与展望 | 费曼 |
+
 ## 本地预览
 
 ```bash
@@ -87,6 +110,6 @@ python3 -m http.server 8000
 ## 技术栈
 
 - **HTML5 + CSS3 + 原生 JavaScript** — 零框架、零构建工具、零第三方依赖，浏览器直接打开即可阅读
-- **`style.css`** — 统一浅色设计系统：CSS 自定义属性（design tokens）；两条技术线共用同一套组件，仅强调色随 `body.track-*` 切换
+- **`style.css`** — 统一浅色设计系统：CSS 自定义属性（design tokens）；各技术线共用同一套组件，仅强调色随 `body.track-*` 切换
 - **`site-nav.js`** — 导航数据单一来源。改章节 / 分部 / 导师只改它，全站导航自动更新；页面不写死导航
 - **代码高亮** — Catppuccin 配色，手动 `<span>` 类标记，无 JS 高亮库

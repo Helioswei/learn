@@ -4,20 +4,22 @@
 
 ## 项目概览
 
-**Helios 技术教程** — 多技术静态教程站：**Kotlin**（Android 开发）与 **LVGL**（嵌入式图形库）双技术线，各 16 章。纯 HTML + CSS + 原生 JavaScript，零框架、零构建工具，直接以静态文件部署到 GitHub Pages（仓库根）。
+**Helios 技术教程** — 多技术静态教程站：**Kotlin**（Android 开发）、**LVGL**（嵌入式图形库）、**ESP32 电子墨水屏**（电子书阅读器实战）三条技术线，各 16 章。纯 HTML + CSS + 原生 JavaScript，零框架、零构建工具，直接以静态文件部署到 GitHub Pages（仓库根）。
 
 - Kotlin 线：从语言特性到 Android 实战（语法、协程、Jetpack Compose、架构等）。
 - LVGL 线：基于真实 `lvgl-master` 源码仓库（版本 **9.6.0-dev**）的嵌入式图形教程。
+- ESP32 电子墨水屏线：基于真实 `diy-esp32-epub-reader` 项目的电子书阅读器实战（EPUB 解析、EPDiy 渲染、低功耗）。
 
 ## 目录结构
 
 - `index.html` — 门户首页（两条技术线入口）
-- `style.css` — 统一浅色设计系统：顶部 `:root` 定义 design tokens（颜色 / 字体 / 圆角 / 阴影），`body.track-lvgl` 覆盖强调色；改全站观感只改这里
+- `style.css` — 统一浅色设计系统：顶部 `:root` 定义 design tokens（颜色 / 字体 / 圆角 / 阴影），`body.track-lvgl` / `body.track-epub` 覆盖各线强调色（Kotlin 朱砂红 · LVGL 墨藏蓝 · ESP32 琥珀金）；改全站观感只改这里
 - `site-nav.js` — **导航数据单一来源**：`window.MENTORS`（导师 → emoji）+ `window.SITE_NAV`（站名、技术线、分部、章节、导师、方法论）
 - `script.js` — 依赖 `site-nav.js`，负责顶栏下拉导航、底部上一章/下一章、目录页 TOC、代码复制按钮的渲染
 - `preview.html` — 设计系统预览页（组件与 tokens 一览，仅作开发参考）
 - `kotlin/` — `index.html`（目录页）+ `chapter01-16.html`
 - `lvgl/` — `index.html`（目录页）+ `chapter01-16.html`
+- `epub/` — `index.html`（目录页）+ `chapter01-16.html`
 - `tools/check-links.js` — 全站链接 + SITE_NAV 导航校验脚本（Node，由 Task 8 建立；用法见「校验」）
 - `docs/` — superpowers 设计与计划文档（非站点内容）
 
@@ -25,8 +27,8 @@
 
 - **改导航 / 章节 / 导师 → 只改 `site-nav.js` 的 `SITE_NAV` / `MENTORS`**。禁止在页面 HTML 里写死导航——顶栏、目录、上一章/下一章均由 `script.js` 依据 `SITE_NAV` 自动渲染。
 - 每个页面 `<body>` 必须声明：
-  - `class="track-*"` — 技术线标识（`track-kotlin` / `track-lvgl`），决定强调色
-  - `data-track` — 技术线 id（`kotlin` / `lvgl`）；门户与 preview 页可省略
+  - `class="track-*"` — 技术线标识（`track-kotlin` / `track-lvgl` / `track-epub`），决定强调色
+  - `data-track` — 技术线 id（`kotlin` / `lvgl` / `epub`）；门户与 preview 页可省略
   - `data-chapter` — 章节页编号（章节页必填）；Kotlin 用两位补零（如 `"01"`），LVGL 用非补零（如 `"1"`），`script.js` 用 `parseInt` 解析，两者均可
   - `data-root` — 相对根：子目录章节/目录页用 `"../"`，根目录页面（门户、preview）用 `"./"`
 - **链接一律相对路径**。GitHub Pages 部署在 `/learn/` 子路径，以 `/` 开头的根绝对路径会失效。

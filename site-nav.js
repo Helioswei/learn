@@ -79,6 +79,41 @@ window.SITE_NAV = {
           { num: 16, title: "生态、成长路线与资源", mentor: "费曼", method: "教是最好的学" }
         ]}
       ]
+    },
+    {
+      id: "epub",
+      name: "ESP32 电子墨水屏",
+      accent: "#9a6a1f",
+      desc: "ESP32 电子墨水屏电子书实战",
+      tagline: "从零解剖一个 ESP32 电子书阅读器：EPUB 解析、电子墨水屏渲染、低功耗",
+      parts: [
+        { title: "认识项目", chapters: [
+          { num: 1, title: "项目概览：DIY ESP32 电子书阅读器", mentor: "费曼", method: "第一性原理" },
+          { num: 2, title: "开发环境搭建（PlatformIO + ESP-IDF）", mentor: "鲁班", method: "工欲善其事" }
+        ]},
+        { title: "硬件与底层", chapters: [
+          { num: 3, title: "电子墨水屏与 EPDiy", mentor: "鲁班", method: "工欲善其事" },
+          { num: 4, title: "板级抽象：Board 工厂", mentor: "诸葛亮", method: "运筹帷幄" },
+          { num: 5, title: "输入控制：三按键导航", mentor: "狄仁杰", method: "系统分析" },
+          { num: 6, title: "存储：SD 卡与 SPIFFS", mentor: "鲁班", method: "工欲善其事" }
+        ]},
+        { title: "EPUB 解析", chapters: [
+          { num: 7, title: "EPUB 格式解密（zip + miniz）", mentor: "柯南", method: "真相只有一个" },
+          { num: 8, title: "XML 解析：content.opf（TinyXML2）", mentor: "柯南", method: "真相只有一个" },
+          { num: 9, title: "HTML 解析器 RubbishHtmlParser", mentor: "福尔摩斯", method: "排除不可能" },
+          { num: 10, title: "文本换行布局（动态规划）", mentor: "费曼", method: "第一性原理" },
+          { num: 11, title: "分页算法", mentor: "诸葛亮", method: "运筹帷幄" }
+        ]},
+        { title: "渲染与体验", chapters: [
+          { num: 12, title: "渲染到电子墨水屏", mentor: "达芬奇", method: "艺术与工程" },
+          { num: 13, title: "图像处理与缩放", mentor: "达芬奇", method: "艺术与工程" },
+          { num: 14, title: "字体生成", mentor: "鲁班", method: "工欲善其事" }
+        ]},
+        { title: "低功耗与实战", chapters: [
+          { num: 15, title: "深睡眠与低功耗（ULP/EXT1）", mentor: "包青天", method: "铁面无私" },
+          { num: 16, title: "移植、优化与展望", mentor: "费曼", method: "教是最好的学" }
+        ]}
+      ]
     }
   ]
 };

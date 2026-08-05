@@ -58,6 +58,13 @@ body.track-lvgl {
   --tip-bg: var(--paper-deep);
 }
 
+body.track-epub {
+  --accent: #9a6a1f;
+  --accent-strong: #7a5216;
+  --accent-soft: #f3ead9;
+  --tip-bg: var(--paper-deep);
+}
+
 /* ===== 2. Base ===== */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -399,6 +406,7 @@ details .answer-content {
 .track-card .track-cta { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-strong); font-weight: 600; margin-top: 14px; }
 .track-card.kotlin { --accent: #b3402f; }
 .track-card.lvgl { --accent: #35536b; }
+.track-card.epub { --accent: #9a6a1f; }
 
 /* ===== 13. 目录页 TOC ===== */
 .track-hero { text-align: center; padding: 64px 0 8px; }
