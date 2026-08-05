@@ -30,7 +30,7 @@
   <!-- ========== 7.1 揭穿 EPUB ========== -->
   <h2>7.1 揭穿 EPUB：文件名骗人，其实是 zip 归档</h2>
 
-  <p>先纠正一个直觉：<strong>EPUB 不是一种"书"，而是一种"打包方式"</strong>。README 在 "How does it work?" 一节的开门见山原话是："Epub files are a bit of a pain to parse. Despite the file extension <code>epub</code>, they are actually zip archives containing multiple files."（EPUB 文件有点难解析。尽管扩展名是 epub，它们实际上是由多个文件组成的 zip 压缩包。）也就是说，所谓"打开一本 EPUB"，第一步从来不是读文字，而是<strong>解压缩</strong>。只要用 <code>unzip -l</code> 列一下仓库 <code>data/</code> 里那本 <code>pg43-images.epub</code>，案件现场就全部摊开了。</p>
+  <p>先纠正一个直觉：<strong>EPUB 不是一种"书"，而是一种"打包方式"</strong>——本质是一个 <strong>zip 归档</strong>（说人话：一种把多个文件压缩打包成一个文件的格式）。README 在 "How does it work?" 一节的开门见山原话是："Epub files are a bit of a pain to parse. Despite the file extension <code>epub</code>, they are actually zip archives containing multiple files."（EPUB 文件有点难解析。尽管扩展名是 epub，它们实际上是由多个文件组成的 zip 压缩包。）也就是说，所谓"打开一本 EPUB"，第一步从来不是读文字，而是<strong>解压缩</strong>（说人话：zip 的还原过程，把打包压缩起来的文件一个个变回原样；反过来，把一堆文件压成一个包就叫"压缩"）。只要用 <code>unzip -l</code> 列一下仓库 <code>data/</code> 里那本 <code>pg43-images.epub</code>，案件现场就全部摊开了。</p>
 
   <p>现场有几件关键"物证"。排在第一位的 <code>mimetype</code> 是一个约 20 字节的文件，内容是 <code>application/epub+zip</code>，规格要求它必须是归档里<strong>第一个</strong>文件、且不得压缩——它是整本书的"身份证"。然后是 <code>META-INF/container.xml</code>，一份袖珍 XML，它的任务只有一个：告诉你 <code>content.opf</code> 到底藏在哪里。真正的"书"在 <code>OEBPS/</code> 目录里：<code>content.opf</code>（整本书的清单）、<code>toc.ncx</code>（章节目录）、以及一大堆章节 HTML 和图片。注意那本古登堡书的章节文件名长得离谱（<code>@public@vhost@g@gutenberg@html@files@43@43-h@43-h-1.htm.html</code>）——那是古登堡的 Ebookmaker 工具切分章节时把原始 URL 原样当成了文件名，对解析者来说它们只是"清单里的一串字符"，叫什么都无所谓。</p>
 
@@ -76,7 +76,7 @@ $ unzip -l /fs/pg43-images.epub
   <!-- ========== 7.2 zip 与 miniz ========== -->
   <h2>7.2 zip 与 miniz：ROM 里藏着 miniz，但多文件支持被禁用了</h2>
 
-  <p>把 zip 解开需要压缩库，本项目用的是 <strong>miniz</strong>——一个"整个压缩库塞进一个 C 文件"的极简实现。miniz 是 zlib 的独立重实现（同样是 DEFLATE 算法），API 兼容 zlib 最常用的那部分，但完全独立、MIT 许可，特别适合嵌入式。然而有个坑：<strong>miniz 其实早就被内置在 ESP32 的 ROM 里了</strong>。README 原话是："Miniz is actually built into the ESP32 ROM, but support for multifile archives is disabled."（miniz 实际被内置在 ESP32 的 ROM 中，但对多文件归档的支持被禁用了。）ROM 里的 miniz 只留了单流压缩/解压（inflate/deflate）的能力，能解一段数据，却没法"打开一个 zip、按文件名挑文件、逐个解出来"——这正是我们需要的 zip 归档能力，等于被砍掉了。</p>
+  <p>把 zip 解开需要压缩库，本项目用的是 <strong>miniz</strong>（说人话：一个极小的 zip 压缩解压库）——一个"整个压缩库塞进一个 C 文件"的极简实现。miniz 是 zlib 的独立重实现（同样是 DEFLATE 算法），API 兼容 zlib 最常用的那部分，但完全独立、MIT 许可，特别适合嵌入式。然而有个坑：<strong>miniz 其实早就被内置在 ESP32 的 ROM 里了</strong>——ROM 说人话就是芯片里只读的出厂存储，ESP32 出厂时自带一些固件例程。README 原话是："Miniz is actually built into the ESP32 ROM, but support for multifile archives is disabled."（miniz 实际被内置在 ESP32 的 ROM 中，但对多文件归档的支持被禁用了。）ROM 里的 miniz 只留了单流压缩/解压（inflate/deflate）的能力，能解一段数据，却没法"打开一个 zip、按文件名挑文件、逐个解出来"——这正是我们需要的 zip 归档能力，等于被砍掉了。</p>
 
   <p>所以 README 给出的答案是换一个 fork："To read the file I'm using a nice zip library from here: lbernstrone/miniz. This library has been modified to work on the ESP32 with PSRAM."（我用了 lbernstrone/miniz 这个不错的 zip 库，它已被修改为在带 PSRAM 的 ESP32 上工作。）注意 README 把仓库名拼成了 <code>lbernstrone</code>（多打了一个 r），真实仓库是 <code>lbernstone/miniz-esp32</code>。而具体到这份代码，实际编译的是 <code>lib/miniz-2.2.0/</code> 里 vendored 的<strong>官方 miniz 2.2.0</strong>：仓库里的 <code>miniz.c</code> 是把所有实现"合并"（amalgamation）后的单文件产物，配一个 <code>miniz.h</code> 头，直接用 <code>#include "miniz.h"</code> 引进来参与编译。从"README 说的 fork"到"仓库里 vendored 的 stock miniz"，又是一处文档与代码的漂移。</p>
 
@@ -109,7 +109,7 @@ CONFIG_SPIRAM_SPEED_80M=y
 CONFIG_SPIRAM_USE_MALLOC=y            <span class="cmt"># malloc/calloc 可自动使用 PSRAM</span>
 CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=<span class="num">16384</span>  <span class="cmt"># ≤16 KB 的分配留在内部 SRAM</span></code></pre>
 
-  <p>把这两条合起来看，真相就水落石出了：<code>CONFIG_SPIRAM_USE_MALLOC=y</code> 之后，ESP-IDF 的 <code>malloc/calloc</code> 对<strong>超过 <code>SPIRAM_MALLOC_ALWAYSINTERNAL</code>（16384 字节）的请求</strong>，会优先从 PSRAM 分配。而 <code>ZipFile::read_file_to_memory</code> 里正是用 <code>calloc(file_size + 1, 1)</code> 为每一章正文申请内存——古登堡书的章节 HTML 动辄几十 KB，于是自动落进 PSRAM。这就是 README 那句"解析 EPUB 需要 PSRAM"的底层机制：不是哪一行代码显式写了 <code>ps_malloc</code>，而是靠堆分配策略，让大块内容天然绕开内部那 520 kB 的窄道。</p>
+  <p>把这两条合起来看，真相就水落石出了：<code>CONFIG_SPIRAM_USE_MALLOC=y</code> 之后，ESP-IDF 的 <code>malloc/calloc</code> 对<strong>超过 <code>SPIRAM_MALLOC_ALWAYSINTERNAL</code>（16384 字节）的请求</strong>，会优先从 PSRAM 分配。而 <code>ZipFile::read_file_to_memory</code> 里正是用 <code>calloc(file_size + 1, 1)</code> 为每一章正文申请内存——古登堡书的章节 HTML 动辄几十 KB，于是自动落进 PSRAM。这就是 README 那句"解析 EPUB 需要 PSRAM"的底层机制：不是哪一行代码显式写了 <code>ps_malloc</code>，而是靠<strong>堆</strong>（说人话：动态内存，程序运行时可申请、用完可释放的内存区）分配策略，让大块内容天然绕开内部那 520 kB 的窄道。</p>
 
   <table>
     <tr><th>来源 / 配置</th><th>角色</th><th>备注</th></tr>
