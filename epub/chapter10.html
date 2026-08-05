@@ -30,9 +30,9 @@
   <!-- ========== 10.1 问题：word-wrap ========== -->
   <h2>10.1 问题：给定一段文本和行宽，如何断行</h2>
 
-  <p>先把问题定义干净。我们有一个文本块：一串词 <code>words[0..n-1]</code>，每个词量好了宽度 <code>word_widths[i]</code>，外加行宽 <code>page_width</code> 和词间距 <code>space_width</code>。要做的决定是：在哪些词之后换行。<code>TextBlock::layout</code> 的核心任务，就是算出这个断行方案——并让"每一行的右缘空白"尽量均匀。这不是嵌入式专属问题，它有个响亮的名字：<strong>word-wrap</strong>（text justification），是每一个排版引擎都要过的关，从浏览器到 LaTeX 无一例外。</p>
+  <p>先把问题定义干净。我们有一个文本块：一串词 <code>words[0..n-1]</code>，每个词<strong>量好了宽度</strong> <code>word_widths[i]</code>（说人话：量宽，也叫度量，就是用字体数据算出文字实际占多宽），外加<strong>行宽</strong> <code>page_width</code>（说人话：一行能容纳多少宽度，超出就得换行）和词间距 <code>space_width</code>。要做的决定是：在哪些词之后换行。<code>TextBlock::layout</code> 的核心任务，就是算出这个断行方案——并让"每一行的右缘空白"尽量均匀。这不是嵌入式专属问题，它有个响亮的名字：<strong>word-wrap</strong>（说人话：在合适的位置把长文本切成多行，也就是"断行"，英文也叫 text justification），是每一个排版引擎都要过的关，从浏览器到 LaTeX 无一例外。</p>
 
-  <p>一个直观但次优的解法是<strong>贪心</strong>：从行首开始，能塞就塞，塞不下就换行。它快，但产出的行右缘参差。README 在 "Laying out a section of the book" 一节里提到了 MIT 公开课（<em>20. Dynamic Programming II: Text Justification, Blackjack</em>）和 geeksforgeeks 的 word-wrap DP 题（DP-19），正是因为这道题最适合用来演示"贪心 vs 动态规划"的分野。README 原话："we measure the width of each word in the block and then use some dynamic programming to break the words up into lines"（先量每个词的宽度，再用动态规划把词切进多行）；并且它大方承认："I copied the solution for this problem from geeksforgeeks with minor modifications"（我照着 geeksforgeeks 抄了这份解，做了点小改动）。</p>
+  <p>一个直观但次优的解法是<strong>贪心</strong>：从行首开始，能塞就塞，塞不下就换行。它快，但产出的行右缘参差。README 在 "Laying out a section of the book" 一节里提到了 MIT 公开课（<em>20. Dynamic Programming II: Text Justification, Blackjack</em>）和 geeksforgeeks 的 word-wrap DP 题（DP-19），正是因为这道题最适合用来演示"贪心 vs <strong>动态规划</strong>"的分野——说人话：动态规划是一种算法思路，把大问题拆成一个个子问题、保存中间结果来复用，从而避免重复计算。README 原话："we measure the width of each word in the block and then use some dynamic programming to break the words up into lines"（先量每个词的宽度，再用动态规划把词切进多行）；并且它大方承认："I copied the solution for this problem from geeksforgeeks with minor modifications"（我照着 geeksforgeeks 抄了这份解，做了点小改动）。</p>
 
   <p>为什么"均匀"必须用数学定义？因为"好看"没法直接比较。我们把目标量化成一句话：<strong>每一行右侧空白的平方和越小，排版越均匀</strong>（最后一行除外——书的末行不强制对齐，代价记 0）。这就是整个算法的代价函数。注意"平方"而不是"绝对值"：平方放大了大块空白，算法会宁可把空白分散成多个小块，也不肯容忍一行巨空、一行挤爆。第 1 章预告过的那份 <code>dp[]</code> 代码，正是这段代价函数的物化。</p>
 
@@ -114,7 +114,7 @@ dp[n - <span class="num">1</span>] = <span class="num">0</span>; ans[n - <span c
   }
 }</code></pre>
 
-  <p>复杂度与直觉。两层循环，i 和 j 都至多到 n，最坏 O(n²) 次比较；而一行通常只有十几个词，n 的规模很小，几十个词也就是几百次运算，在 ESP32 上毫无压力。<code>ans[]</code> 是个"前缀指引"：每个 i 记住最优情况下"这一行到哪结束"，回溯时像跳格子一样 <code>i = ans[i] + 1</code>，一步一行，得到的就是最优断行方案。这个"算的时候存决策、算完再回放"的两段式，是动态规划的标准动作——先正向填表，再反向走表。</p>
+  <p>复杂度与直觉。先说<strong>算法复杂度</strong>（说人话：描述算法耗时随输入规模增大而变快多少的量，常用 O(...) 表示，如 O(n²) 意思是输入翻倍、耗时约翻四倍）：两层循环，i 和 j 都至多到 n，最坏 O(n²) 次比较；而一行通常只有十几个词，n 的规模很小，几十个词也就是几百次运算，在 ESP32 上毫无压力。<code>ans[]</code> 是个"前缀指引"：每个 i 记住最优情况下"这一行到哪结束"，回溯时像跳格子一样 <code>i = ans[i] + 1</code>，一步一行，得到的就是最优断行方案。这个"算的时候存决策、算完再回放"的两段式，是动态规划的标准动作——先正向填表，再反向走表。</p>
 
   <table>
     <tr><th>量</th><th>含义</th></tr>
