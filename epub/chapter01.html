@@ -27,8 +27,31 @@
     </div>
   </div>
 
-  <!-- ========== 1.1 为什么需要自制电子书阅读器 ========== -->
-  <h2>1.1 为什么需要自制电子书阅读器</h2>
+  <!-- ========== 1.1 嵌入式基础：RAM 与 Flash 为什么宝贵 ========== -->
+  <h2>1.1 嵌入式基础：RAM 与 Flash 为什么宝贵</h2>
+
+  <p>先补一张最小地图：<strong>嵌入式系统</strong>是什么？一句话说，它就是<strong>专门做某一件事的微型电脑</strong>——没有显示器、键盘、风扇，只有几个芯片藏在电路板里，默默控制着家电、穿戴设备，以及<strong>电子墨水屏（<code>EPD</code>，靠反射环境光成像、断电后画面也不消失的省电屏幕）</strong>阅读器这类"单一用途"的设备。它和手机、电脑的区别不在"会不会算"，而在"只为一件事优化"：洗衣机是嵌入式系统，智能手表是嵌入式系统，本项目要做的电子书阅读器，同样是嵌入式系统。</p>
+
+  <p>本项目的大脑是 <strong>ESP32</strong>——乐鑫科技出品的<strong>低成本、自带 WiFi 与蓝牙的 <code>MCU</code></strong>（微控制器，中文俗称"单片机"，可理解为把 CPU、内存、存储整合进一颗芯片的"完整小电脑"）。我们写的 C++ 代码，最终会编译成<strong>固件（firmware）</strong>——也就是"固化进硬件的程序"——烧进芯片的 <strong>Flash</strong> 存储区，掉电也不丢。真正让嵌入式与众不同、也让初学者最先卡住的，是它只有两种"记忆"，而且都少得可怜：<strong>RAM</strong>（内存，运行时放变量和暂存数据的区域，断电即失）以 KB 计，<strong>Flash</strong>（存储区，装程序和静态数据，掉电保留）以 MB 计——而你手机、电脑上的内存和硬盘，动辄就是 GB 级，差了上千倍。所以<strong>"资源受限"是嵌入式设计的默认前提</strong>：每个字节都要精打细算。这句话，后面每一章都会反复出现。</p>
+
+  <p>RAM 不够用怎么办？ESP32 的部分型号支持 <strong>PSRAM</strong>——外挂在主芯片旁边、可选的<strong>扩展内存</strong>，能把可用 RAM 从几百 KB 抬到几 MB。为什么本项目把它列为第一条硬性要求？因为 <strong>EPUB</strong>（电子书打包格式，本质是个 zip 压缩包）在解压、解析 XML 时，会把整本书的内容一次性读进内存：一本带插图的古登堡书轻轻松松吃掉几 MB，而 ESP32 芯片内部只有约 520 kB 的 SRAM，没有 PSRAM 根本装不下。至于书存在哪？一般放在一张 <strong>SD 卡</strong>（可插拔的微型存储卡，本质也是 Flash）上——具体取舍到 1.3 再展开。</p>
+
+  <p>把"资源宝贵"记在心里，你就能看懂后面所有取舍了：解析器敢自称"Rubbish"（垃圾）HTML 解析器，是因为它<strong>不做 CSS、只认标准标签</strong>，把样式省了个干净；字体只生成黑白两色、还要压缩，是为了<strong>省内存、让翻页更快</strong>；页面得先在内存里排版完毕、再一次性刷上墨水屏，是为了少刷几次、省点功耗。每一条看似"偷懒"的设计，背后都是同一条铁律：<strong>内存和存储就那么点，得省着用。</strong></p>
+
+  <table>
+    <tr><th>存储</th><th>作用</th><th>断电是否保留</th><th>量级</th><th>在本项目里的用途</th></tr>
+    <tr><td><code>RAM</code></td><td>运行时暂存区：变量、解析结果、页面缓冲</td><td>断电即失</td><td>KB 级（ESP32 内部约 520 kB）</td><td>放解析出的文本块与帧缓冲</td></tr>
+    <tr><td><code>Flash</code></td><td>存储区：固件程序与静态数据</td><td>掉电保留</td><td>MB 级</td><td>装固件本体与字体</td></tr>
+    <tr><td><code>PSRAM</code></td><td>外挂的扩展 RAM</td><td>断电即失</td><td>MB 级（通常 4–8 MB）</td><td>装下一整本 EPUB 解压后的内容</td></tr>
+  </table>
+
+  <div class="tip">
+    <div class="tip-title">费曼提示</div>
+    <p>用一张书桌来记：RAM 是"桌面"——摆着正在干活的东西，断电（人离开）就清空；Flash 是"书架"——东西放上去能长久保存，断电也不丢；PSRAM 等于又加了一张折叠桌。后面每次听到"内存紧张"，先想想：是桌面不够大（RAM），还是书架放不下（Flash / 存储）？</p>
+  </div>
+
+  <!-- ========== 1.2 为什么需要自制电子书阅读器 ========== -->
+  <h2>1.2 为什么需要自制电子书阅读器</h2>
 
   <p>从第一性原理出发：<strong>阅读这个场景，本质是"长时间、近距离、看静态文字"</strong>。电子墨水屏（E-ink）几乎是为这个场景量身定做的。它有两个杀手级特性：一是<strong>反射式显示</strong>，屏幕本身不发光，靠反射环境光成像，和纸张一样柔和；二是<strong>双稳态</strong>（bistable），像素在断电后依然保持显示状态——也就是说，画面定格后屏幕不再消耗任何电能，只有翻页那一下才需要供电。加上没有背光、没有频闪，长时间看书也不容易疲劳。</p>
 
@@ -45,8 +68,8 @@
     <tr><td>适合场景</td><td>静态文字阅读</td><td>视频、游戏、高频交互</td></tr>
   </table>
 
-  <!-- ========== 1.2 项目是什么 ========== -->
-  <h2>1.2 项目是什么</h2>
+  <!-- ========== 1.3 项目是什么 ========== -->
+  <h2>1.3 项目是什么</h2>
 
   <p>这个项目叫 <code>diy-esp32-epub-reader</code>（作者 <code>atomic14</code>），是一个跑在 ESP32 上的 DIY EPUB 阅读器。它能解析从 <strong>Project Gutenberg（古登堡计划）</strong>等免费资源下载的 EPUB 文件，在电子墨水屏上分页渲染，并用三个按键完成所有翻阅操作。作者在 README 里直白地解释了动机："It seemed like a nice challenge - ePub files are not the most friendly format to process on an embedded device."——把最不适合嵌入式设备的格式之一，塞进一个资源极其有限的单片机里，本身就是一件很好玩的事。</p>
 
@@ -68,8 +91,8 @@
     <p>为什么 EPUB 离不开 PSRAM？EPUB 整本书是一个 zip 压缩包，解压和 XML 解析都会把内容一次性读进堆内存；一本带插图的古登堡书很容易达到数 MB。而 ESP32 内部 SRAM 只有约 <code>520 kB</code>，没有外挂 PSRAM（通常 4–8 MB）根本装不下。所以 README 把 PSRAM 列为第一条硬性要求——这不是可选优化，是能跑与不能跑的分界线。</p>
   </div>
 
-  <!-- ========== 1.3 解剖仓库 ========== -->
-  <h2>1.3 解剖仓库</h2>
+  <!-- ========== 1.4 解剖仓库 ========== -->
+  <h2>1.4 解剖仓库</h2>
 
   <p>打开仓库根目录，先别被文件数量吓到——真正的"应用"集中在两处：<code>src/</code> 是固件本体，<code>lib/</code> 是自带依赖。<code>src/main.cpp</code> 是程序入口，它定义了一个<strong>三态状态机</strong>（<code>SELECTING_EPUB</code> → <code>SELECTING_TABLE_CONTENTS</code> → <code>READING_EPUB</code>），用一个 FreeRTOS 消息队列接收按键事件，把"书目列表 → 目录 → 阅读"串成一个循环。同目录的 <code>boards/</code> 是板级抽象层：<code>Board.h</code> 定义接口与 <code>factory()</code> 工厂方法，编译期根据宏实例化 <code>Lilygo_t5_47</code>、<code>Epdiy</code>、<code>M5Paper</code> 三块板中的一块。</p>
 
@@ -109,8 +132,8 @@ test/ + fixtures/          <span class="cmt">本机单元测试</span></code></p
     <p>这个仓库用到了 <strong>git 子模块</strong>（<code>lib/epdiy</code>、<code>lib/touch</code>、<code>lib/png/PNGdec</code>）。README 特别强调必须 <code>git clone --recursive</code> 克隆；如果漏了 <code>--recursive</code>，<code>lib/epdiy</code> 与 <code>lib/touch</code> 就是空目录，编译会在 include 第一步就失败。</p>
   </div>
 
-  <!-- ========== 1.4 工作流程一瞥 ========== -->
-  <h2>1.4 工作流程一瞥</h2>
+  <!-- ========== 1.5 工作流程一瞥 ========== -->
+  <h2>1.5 工作流程一瞥</h2>
 
   <p>把整条流水线串起来看，就是全书的主线：<strong>EPUB 文件本质上是一个 zip 压缩包</strong>，里面装着若干 XML/XHTML 文件。第一步用 miniz 解包；在压缩包里找到 <code>OEBPS/content.opf</code>（一份 XML），用 TinyXML2 解析出三样东西——<code>metadata</code>（书名、作者、封面）、<code>manifest</code>（所有文件清单）、<code>spine</code>（阅读顺序）。随后按 spine 顺序读取每一章的 XHTML。</p>
 
@@ -161,10 +184,10 @@ esp_deep_sleep_start();</code></pre>
     <p>README 写的是"30 秒无操作后深睡眠"，但 <code>main.cpp</code> 里实际是 <code>120 * 1000 * 1000</code> 微秒 = <strong>120 秒</strong>。这就是嵌入式项目里文档与代码漂移的活例子——永远以源码为准。遇到这种出入，请把"读代码"当作习惯，而不是抱怨文档。</p>
   </div>
 
-  <!-- ========== 1.5 关键技术栈 ========== -->
-  <h2>1.5 关键技术栈</h2>
+  <!-- ========== 1.6 关键技术栈 ========== -->
+  <h2>1.6 关键技术栈</h2>
 
-  <p>把 1.4 流水线里的每一环"是谁实现的"列出来，就是完整技术栈。构建层是 <strong>PlatformIO + ESP-IDF</strong>（<code>platform = espressif32</code>、<code>framework = espidf</code>）；屏幕驱动是 <strong>EPDiy</strong>；zip 解包用 <strong>miniz</strong>（一个针对 ESP32 改造、支持 PSRAM 与多文件归档的版本）；XML/XHTML 解析用 <strong>TinyXML2</strong>；图像解码是 <strong>tjpgd3</strong>（JPEG）+ <strong>PNGdec</strong>（PNG）；字体由 <code>scripts/generate_fonts.sh</code> 基于 <code>freetype-py</code> 生成，只输出两色、经过压缩，让翻页更快。</p>
+  <p>把 1.5 流水线里的每一环"是谁实现的"列出来，就是完整技术栈。构建层是 <strong>PlatformIO + ESP-IDF</strong>（<code>platform = espressif32</code>、<code>framework = espidf</code>）；屏幕驱动是 <strong>EPDiy</strong>；zip 解包用 <strong>miniz</strong>（一个针对 ESP32 改造、支持 PSRAM 与多文件归档的版本）；XML/XHTML 解析用 <strong>TinyXML2</strong>；图像解码是 <strong>tjpgd3</strong>（JPEG）+ <strong>PNGdec</strong>（PNG）；字体由 <code>scripts/generate_fonts.sh</code> 基于 <code>freetype-py</code> 生成，只输出两色、经过压缩，让翻页更快。</p>
 
   <p>整套栈里最值得单独讲的是<strong>动态规划换行</strong>——全书第 10 章的主角。<code>TextBlock::layout</code> 把"怎么把单词排成行"建模成最小代价问题：<code>dp[i]</code> 表示从单词 i 开始那一行的最小代价，代价定义为每行右侧空白的平方（最后一行除外）。它从最后一个单词向前递推，把最优的行尾下标记进 <code>ans[]</code>。README 还贴心地引用了 MIT 公开课（"Dynamic Programming II: Text Justification, Blackjack"）作为入门参考。</p>
 
@@ -209,7 +232,7 @@ dp[n - <span class="num">1</span>] = <span class="num">0</span>; ans[n - <span c
 
     <div class="exercise-item">
       <h3>练习 1：电子墨水屏 vs 屏幕 <span class="difficulty difficulty-easy">入门</span></h3>
-      <p>结合 1.1，列出电子墨水屏适合阅读的三个理由，以及两个它明显不适合的场景。尽量用"特性→后果"的句式（例如"反射式显示 → 长时间阅读不疲劳"）。</p>
+      <p>结合 1.2，列出电子墨水屏适合阅读的三个理由，以及两个它明显不适合的场景。尽量用"特性→后果"的句式（例如"反射式显示 → 长时间阅读不疲劳"）。</p>
       <details>
         <summary>提示</summary>
         <div class="answer-content"><p>从发光方式、功耗、刷新率三个维度想；反面例子可以找"需要连续刷新"的用途。</p></div>
@@ -227,7 +250,7 @@ dp[n - <span class="num">1</span>] = <span class="num">0</span>; ans[n - <span c
       <p>打开 <code>diy-esp32-epub-reader</code> 仓库，指出以下四处的位置：(a) 固件程序入口在哪个文件？(b) 三块板的实现在哪个目录？(c) 两本示例书放在哪？(d) 4 套构建环境定义在哪个文件？</p>
       <details>
         <summary>提示</summary>
-        <div class="answer-content"><p>对照 1.3 的仓库地图：入口在 <code>src/</code>，板子在 <code>src/boards/</code>，书在 <code>data/</code>，环境在 <code>platformio.ini</code>。</p></div>
+        <div class="answer-content"><p>对照 1.4 的仓库地图：入口在 <code>src/</code>，板子在 <code>src/boards/</code>，书在 <code>data/</code>，环境在 <code>platformio.ini</code>。</p></div>
       </details>
       <details>
         <summary>参考答案</summary>
