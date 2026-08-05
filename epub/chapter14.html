@@ -30,7 +30,7 @@
   <!-- ========== 14.1 嵌入式字体的取舍：四种风格 + 拉丁字符 ========== -->
   <h2>14.1 嵌入式字体的取舍：只 4 种风格，只留拉丁字符与标点</h2>
 
-  <p>普通桌面系统要显示文字，直接加载系统的字库即可——几千个字形、几十 MB 的 TTF，对它不过是九牛一毛。但在这台设备上，字体是要<strong>编译进固件、常驻 Flash</strong> 的资源。README 的开头就把作者的取舍写得很坦白：<em>"I've only included 4 font styles - regular, bold, italic and bold-italic. I've also only generated glyphs for Latin characters and punctuation."</em>——只做四种风格（常规 / 粗体 / 斜体 / 粗斜体），而且只生成拉丁字符与标点的字形。</p>
+  <p>普通桌面系统要显示文字，直接加载系统的<strong>字库</strong>即可——说人话，字库就是字体数据的集合，一套<strong>字体</strong>（一种字形样式，类似宋体/黑体之分）由几千个<strong>字形</strong>（glyph，单个字符对应的图形，比如字母 A 的样子）组成；几十 MB 的 TTF，对它不过是九牛一毛。但在这台设备上，字体是要<strong>编译进固件、常驻 Flash</strong> 的资源。README 的开头就把作者的取舍写得很坦白：<em>"I've only included 4 font styles - regular, bold, italic and bold-italic. I've also only generated glyphs for Latin characters and punctuation."</em>——只做四种风格（常规 / 粗体 / 斜体 / 粗斜体），而且只生成拉丁字符与标点的字形。</p>
 
   <p>这四个"瘦身"约束分别回答了一个现实问题。四种风格，是因为 EPUB 的排版里最多只出现 <code>&lt;b&gt;</code> 粗体和 <code>&lt;i&gt;</code> 斜体这两种强调（HTML 解析器也只认这两个标签），作者据此给每种字形准备一套 <code>get_font(bold, italic)</code> 就能覆盖的组合；只留拉丁字符，是因为书源（古登堡计划）以英文书为主；只做黑白两色，则是为了让屏幕走快速刷新通道（14.3 详述）。每一刀都砍在"不常用的部分"上，换来的是"常用的部分更小、更快"。</p>
 
@@ -104,7 +104,7 @@ compressed = packed
 <span class="kw">if</span> compress:
     compressed = zlib.compress(packed)  <span class="cmt"># --compress：字形位图整体 zlib 压缩</span></code></pre>
 
-  <p>第四，把结果写成 C 头文件。产物是一个四件套：<code>XXXBitmaps[]</code>（压缩字形位图）、<code>XXXGlyphs[]</code>（每个字形的描述符）、<code>XXXIntervals[]</code>（码点区间 → 字形偏移）、以及一个 <code>EpdFont</code> 结构体把它们串起来。以 <code>regular_font.h</code> 结尾的真实结构体为例：<code>{ regular_fontBitmaps, regular_fontGlyphs, regular_fontIntervals, 79, 1, 47, 37, -11 }</code>——依次是 79 个字符区间、<code>1</code>（压缩标志，位图已 zlib 压缩）、字体高 47 像素、上伸部 37、下探部 −11。每个字形描述符则长这样：<code>{ 21, 25, 20, 0, 25, 70, 1572 }</code> 表示大写 A 宽 21、高 25、字距 20、其 70 字节的压缩位图存放在 Bitmaps 数组第 1572 字节处。EPDiy 渲染时靠 <code>Intervals</code> 把字符码点定位到字形、再解压位图。</p>
+  <p>第四，把结果写成 C 头文件。所谓<strong>点阵字体</strong>（也叫位图字体），就是每个字符用一张小像素图表示——本章生成的正是这种字体。产物是一个四件套：<code>XXXBitmaps[]</code>（压缩字形位图）、<code>XXXGlyphs[]</code>（每个字形的描述符）、<code>XXXIntervals[]</code>（码点区间 → 字形偏移）、以及一个 <code>EpdFont</code> 结构体把它们串起来。以 <code>regular_font.h</code> 结尾的真实结构体为例：<code>{ regular_fontBitmaps, regular_fontGlyphs, regular_fontIntervals, 79, 1, 47, 37, -11 }</code>——依次是 79 个字符区间、<code>1</code>（压缩标志，位图已 zlib 压缩）、字体高 47 像素、上伸部 37、下探部 −11。每个字形描述符则长这样：<code>{ 21, 25, 20, 0, 25, 70, 1572 }</code> 表示大写 A 宽 21、高 25、字距 20、其 70 字节的压缩位图存放在 Bitmaps 数组第 1572 字节处。EPDiy 渲染时靠 <code>Intervals</code> 把字符码点定位到字形、再解压位图。</p>
 
 <pre><code><span class="cmt">/* lib/Fonts/regular_font.h 末尾 —— EpdFont 结构体（真实数据） */</span>
 <span class="kw">const</span> EpdFont regular_font = {
