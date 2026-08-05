@@ -30,9 +30,9 @@
   <!-- ========== 6.1 书放哪：SD 卡 vs SPIFFS ========== -->
   <h2>6.1 EPUB 文件放哪：SD 卡 vs SPIFFS 的权衡</h2>
 
-  <p>阅读器的"书库"是文件系统：EPUB 文件放在这里，<code>EpubList</code> 扫目录、列书单、打开章节都从这里读。这个项目给了两条路——<strong>SD 卡</strong>（走 SPI 接口，挂载成 FAT 文件系统）和 <strong>SPIFFS</strong>（直接写在板载 Flash 的一个分区里）。README 只用一句话点了二者的差距："You can use SPIFFS instead of an SD Card, but you won't be able to fit many books on it."（你可以用 SPIFFS 顶替 SD 卡，但装不下几本书。）</p>
+  <p>阅读器的"书库"是<strong>文件系统</strong>（把存储空间整理成"文件夹套文件夹、里面放着文件"这种树状结构的机制）：EPUB 文件放在这里，<code>EpubList</code> 扫目录、列书单、打开章节都从这里读。这个项目给了两条路——<strong>SD 卡</strong>（走 <strong>SPI 接口</strong>——一种串行通信协议，一条总线上一个主机带多个外设，靠片选线点名选谁通信——并<strong>挂载</strong>成 FAT 文件系统，挂载（mount）就是让系统把存储设备"接"进文件系统，之后用 <code>/fs</code> 这样的路径就能读写它）和 <strong>SPIFFS</strong>（直接写在板载 Flash 的一个<strong>分区</strong>里，分区就是把 Flash 划出的一块独立区域、各管各的用途）。README 只用一句话点了二者的差距："You can use SPIFFS instead of an SD Card, but you won't be able to fit many books on it."（你可以用 SPIFFS 顶替 SD 卡，但装不下几本书。）</p>
 
-  <p>差距的根源在容量与可拆换。翻 <code>partitions.csv</code>：这颗 ESP32 的 4 MB Flash 里，<code>app0</code> 固件分区占 <code>0x120000</code>（约 1.1 MiB），<code>spiffs</code> 数据分区从 <code>0x130000</code> 起、大小 <code>0x2D0000</code>——换算一下是 2,949,120 字节，约 <strong>2.8 MiB</strong>。而 <code>data/</code> 里随仓库附带的两本示例书，<code>pg43-images.epub</code> 约 297 KiB、<code>pg14838-images.epub</code> 约 1.3 MiB，两本加起来就吃掉 1.6 MiB——也就是说，这个 2.8 MiB 的小暗格也就再塞得下一两本同等规模的书。反观 SD 卡动辄几 GB、还能随手抽换，装一百本古登堡书都不在话下。这就是"能装下多少本书"的物理边界。</p>
+  <p>差距的根源在容量与可拆换。翻 <code>partitions.csv</code>（<strong>分区表</strong>：记录每块分区叫什么、从哪个地址开始、占多大的清单）：这颗 ESP32 的 4 MB Flash 里，<code>app0</code> 固件分区占 <code>0x120000</code>（约 1.1 MiB），<code>spiffs</code> 数据分区从 <code>0x130000</code> 起、大小 <code>0x2D0000</code>——换算一下是 2,949,120 字节，约 <strong>2.8 MiB</strong>。而 <code>data/</code> 里随仓库附带的两本示例书，<code>pg43-images.epub</code> 约 297 KiB、<code>pg14838-images.epub</code> 约 1.3 MiB，两本加起来就吃掉 1.6 MiB——也就是说，这个 2.8 MiB 的小暗格也就再塞得下一两本同等规模的书。反观 SD 卡动辄几 GB、还能随手抽换，装一百本古登堡书都不在话下。这就是"能装下多少本书"的物理边界。</p>
 
 <pre><code><span class="cmt"># partitions.csv：这颗 4 MB Flash 的分区地界</span>
 <span class="cmt"># Name,   Type, SubType, Offset,  Size,  Flags</span>
@@ -64,7 +64,7 @@ pg14838-images.epub    <span class="num">1386783</span> bytes  <span class="cmt"
   <!-- ========== 6.2 SD 卡 ========== -->
   <h2>6.2 SD 卡：SPI 引脚配置、挂载与读取</h2>
 
-  <p>SD 卡在 ESP32 上有两种接法：<strong>SDMMC</strong>（原生 4 位总线，快但占用引脚多）和 <strong>SPI 模式</strong>（只用 4 根线：<code>MISO</code>、<code>MOSI</code>、<code>CLK</code>、<code>CS</code>）。本项目走的是 SPI 模式，因为对阅读器来说，读几本书的带宽需求远没有 4 位并行带来的复杂度划算。四根线接在哪些引脚，由 <code>platformio.ini</code> 里的四个宏注入：<code>SD_CARD_PIN_NUM_MISO</code>、<code>SD_CARD_PIN_NUM_MOSI</code>、<code>SD_CARD_PIN_NUM_CLK</code>、<code>SD_CARD_PIN_NUM_CS</code>——每一块板子的布线不同，宏的值也不同，而代码只认宏、不认具体引脚。</p>
+  <p>SD 卡在 ESP32 上有两种接法：<strong>SDMMC</strong>（原生 4 位总线，快但占用引脚多）和 <strong>SPI 模式</strong>（只用 4 根线：<code>MISO</code>、<code>MOSI</code>（两根<strong>数据线</strong>，一根收、一根发）、<code>CLK</code>（时钟线，给通信打节拍）、<code>CS</code>（<strong>片选</strong>，选中哪颗芯片才和它说话））。本项目走的是 SPI 模式，因为对阅读器来说，读几本书的带宽需求远没有 4 位并行带来的复杂度划算。四根线接在哪些引脚，由 <code>platformio.ini</code> 里的四个宏注入：<code>SD_CARD_PIN_NUM_MISO</code>、<code>SD_CARD_PIN_NUM_MOSI</code>、<code>SD_CARD_PIN_NUM_CLK</code>、<code>SD_CARD_PIN_NUM_CS</code>——每一块板子的布线不同，宏的值也不同，而代码只认宏、不认具体引脚。</p>
 
 <pre><code><span class="cmt">; platformio.ini [env:lilygo_t5_47]：SD 卡走 SPI，四根引脚由宏注入</span>
 -DSD_CARD_PIN_NUM_MISO=GPIO_NUM_14
@@ -79,7 +79,7 @@ pg14838-images.epub    <span class="num">1386783</span> bytes  <span class="cmt"
     <tr><td><code>m5_paper</code></td><td><code>GPIO_NUM_13</code></td><td><code>GPIO_NUM_12</code></td><td><code>GPIO_NUM_14</code></td><td><code>GPIO_NUM_4</code></td></tr>
   </table>
 
-  <p>挂载由 <code>lib/sd_card/src/SDCard.cpp</code> 完成，它把 ESP-IDF 的标准流程包成了一个类。构造时先 <code>spi_bus_initialize</code> 初始化 SPI 总线（DMA 通道 1），再用 <code>SDSPI_DEVICE_CONFIG_DEFAULT()</code> 配置设备并把 <code>CS</code> 填进 <code>slot_config.gpio_cs</code>，最后 <code>esp_vfs_fat_sdspi_mount("/fs", ...)</code> 把卡挂到 <code>/fs</code> 挂载点。注意 mount_config 里 <code>format_if_mount_failed = true</code>：万一卡没格式化或文件系统坏了，驱动会<strong>直接帮你格式化</strong>再挂载——这在开发期很省心，但也意味着别在卡上放不可再生的数据。析构函数则反向收尾：<code>esp_vfs_fat_sdcard_unmount</code> 卸载、<code>spi_bus_free</code> 释放总线。</p>
+  <p>挂载由 <code>lib/sd_card/src/SDCard.cpp</code> 完成，它把 ESP-IDF 的标准流程包成了一个类。构造时先 <code>spi_bus_initialize</code> 初始化 SPI 总线（DMA 通道 1），再用 <code>SDSPI_DEVICE_CONFIG_DEFAULT()</code>（<strong>SDSPI</strong> 就是"SD 卡走 SPI 协议"这一模式的合称）配置设备并把 <code>CS</code> 填进 <code>slot_config.gpio_cs</code>，最后 <code>esp_vfs_fat_sdspi_mount("/fs", ...)</code> 把卡挂到 <code>/fs</code> 挂载点。注意 mount_config 里 <code>format_if_mount_failed = true</code>：万一卡没格式化或文件系统坏了，驱动会<strong>直接帮你格式化</strong>再挂载——这在开发期很省心，但也意味着别在卡上放不可再生的数据。析构函数则反向收尾：<code>esp_vfs_fat_sdcard_unmount</code> 卸载、<code>spi_bus_free</code> 释放总线。</p>
 
 <pre><code><span class="cmt">/* Board.cpp：编译期二选一——SD 还是 SPIFFS */</span>
 <span class="kw">void</span> Board::start_filesystem()
